@@ -444,6 +444,29 @@ public class TaskDetailWidget extends Flow {
         addField.setTextColor(ColorUtils.TEXT_WHITE.getColor());
         addField.autoUpdateOnChange(true);
         addField.value(new StringValue.Dynamic(() -> newTitle[0], val -> newTitle[0] = val));
+        // Re-focus the add field after a rebuild triggered by Enter, so the user can keep typing.
+        if (data.focusSubtaskAdd) {
+            addField.setFocusOnGuiOpen(true);
+            data.focusSubtaskAdd = false;
+        }
+        // refocus=true: skip our own rebuild and let the server sync rebuild once, then refocus the
+        // field, so a second rebuild doesn't steal the cursor (Enter keeps you typing subtasks).
+        java.util.function.Consumer<Boolean> addSubtask = refocus -> {
+            String title = newTitle[0].trim();
+            if (title.isEmpty()) return;
+            task.subtasks.add(new Subtask(UUID.randomUUID(), title, false));
+            newTitle[0] = "";
+            if (refocus) {
+                data.focusSubtaskAdd = true;
+                sendUpdate();
+                // No packet (and thus no sync rebuild) goes out for an unsaved new task, so rebuild locally.
+                if (isNew && !created) ForemanGui.open(data);
+            } else {
+                sendUpdate();
+                ForemanGui.open(data);
+            }
+        };
+        addField.onEnter(() -> addSubtask.accept(true));
         col.child(
             Flow.row()
                 .size(W, ROW_H)
@@ -453,12 +476,7 @@ public class TaskDetailWidget extends Flow {
                         .overlay(ICON_ADD)
                         .onMousePressed(btn -> {
                             if (btn != 0) return false;
-                            String title = newTitle[0].trim();
-                            if (!title.isEmpty()) {
-                                task.subtasks.add(new Subtask(UUID.randomUUID(), title, false));
-                                sendUpdate();
-                                ForemanGui.open(data);
-                            }
+                            addSubtask.accept(false);
                             return true;
                         })));
         return col;

@@ -30,6 +30,9 @@ public class ForemanGuiData {
     /** Whether the search field is expanded. */
     public boolean searchExpanded = false;
 
+    /** One-shot: focus the subtask add field after the next rebuild (Enter keeps typing). */
+    public boolean focusSubtaskAdd = false;
+
     public final PagedWidget.Controller pageController = new PagedWidget.Controller();
 
     public void selectTask(UUID id) {
