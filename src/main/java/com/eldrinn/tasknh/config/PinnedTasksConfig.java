@@ -75,7 +75,14 @@ public class PinnedTasksConfig {
 
     public void load() {
         File file = configFile();
-        if (!file.exists()) return;
+        boolean migrating = false;
+        if (!file.exists()) {
+            // One-time migration from the pre-rename config file.
+            File legacy = legacyConfigFile();
+            if (!legacy.exists()) return;
+            file = legacy;
+            migrating = true;
+        }
         try (FileReader reader = new FileReader(file)) {
             Data loaded = GSON.fromJson(reader, Data.class);
             if (loaded != null) {
@@ -87,6 +94,7 @@ public class PinnedTasksConfig {
             org.apache.logging.log4j.LogManager.getLogger("tasknh")
                 .warn("Failed to load tasknh_pins.json: {}", e.getMessage());
         }
+        if (migrating) save(); // persist to the new tasknh_pins.json
     }
 
     public void save() {
@@ -233,5 +241,10 @@ public class PinnedTasksConfig {
 
     private static File configFile() {
         return new File(Minecraft.getMinecraft().mcDataDir, "config/tasknh_pins.json");
+    }
+
+    // Pre-rename config file (mod was formerly "Foreman"). Kept for one-time migration.
+    private static File legacyConfigFile() {
+        return new File(Minecraft.getMinecraft().mcDataDir, "config/foreman_pins.json");
     }
 }

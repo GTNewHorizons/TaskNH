@@ -22,6 +22,9 @@ public class TaskNHWorldData extends WorldSavedData {
 
     private static final String DATA_NAME = "TaskNHTasks";
 
+    // Pre-rename storage key (mod was formerly "Foreman"). Kept for one-time data migration.
+    private static final String LEGACY_DATA_NAME = "ForemanTasks";
+
     private static final org.apache.logging.log4j.Logger LOG = org.apache.logging.log4j.LogManager.getLogger("tasknh");
 
     // Outer key = teamId, inner key = taskId
@@ -48,6 +51,18 @@ public class TaskNHWorldData extends WorldSavedData {
         TaskNHWorldData data = (TaskNHWorldData) storage.loadData(TaskNHWorldData.class, DATA_NAME);
         if (data == null) {
             data = new TaskNHWorldData();
+            // One-time migration: adopt tasks saved under the pre-rename storage key.
+            TaskNHWorldData legacy = (TaskNHWorldData) storage.loadData(TaskNHWorldData.class, LEGACY_DATA_NAME);
+            if (legacy != null && (!legacy.teamTasks.isEmpty() || !legacy.playerLastSeen.isEmpty())) {
+                data.teamTasks.putAll(legacy.teamTasks);
+                data.playerLastSeen.putAll(legacy.playerLastSeen);
+                data.markDirty();
+                LOG.info(
+                    "Migrated tasks from legacy storage '{}' to '{}' ({} team(s))",
+                    LEGACY_DATA_NAME,
+                    DATA_NAME,
+                    legacy.teamTasks.size());
+            }
             storage.setData(DATA_NAME, data);
         }
         return data;
