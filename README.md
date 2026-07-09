@@ -1,6 +1,6 @@
-# Foreman
+# TaskNH
 
-A task management mod for Minecraft 1.7.10 (GregTech: New Horizons). Foreman lets teams create, assign, and track tasks directly in-game, with a GUI, map markers, and a full command interface.
+A task management mod for Minecraft 1.7.10 (GregTech: New Horizons). TaskNH lets teams create, assign, and track tasks directly in-game, with a GUI, map markers, and a full command interface.
 
 | Task List                               | Task Detail                                     |
 |-----------------------------------------|-------------------------------------------------|
@@ -34,21 +34,21 @@ NEI is only required for the icon ghost slot. Without it the icon slot is visibl
 
 ## Installation
 
-1. Drop the Foreman `.jar` into your `mods/` folder.
+1. Drop the TaskNH `.jar` into your `mods/` folder.
 2. Make sure GTNHLib and ModularUI2 are also present.
 3. Optionally add Navigator for map marker support.
 
 ## Opening the GUI
 
-- Press **Y** (default keybind, rebindable under Controls) to open the Foreman window for your team
-- Run `/foreman gui` from chat
+- Press **Y** (default keybind, rebindable under Controls) to open the TaskNH window for your team
+- Run `/tasknh gui` from chat
 
 ## Commands
 
 All commands are available to any player. The `reload` subcommand requires OP.
 
 ```
-/foreman <subcommand>
+/tasknh <subcommand>
 ```
 
 | Subcommand               | Description                                            |
@@ -58,12 +58,12 @@ All commands are available to any player. The `reload` subcommand requires OP.
 | `assign <id> <player>`   | Assign a player to a task                              |
 | `unassign <id> <player>` | Remove a player from a task                            |
 | `done <id>`              | Mark a task as Done                                    |
-| `export [name]`          | Export all team tasks to `<world>/foreman/<name>.json` |
-| `import <name>`          | Import tasks from `<world>/foreman/<name>.json`        |
+| `export [name]`          | Export all team tasks to `<world>/tasknh/<name>.json` |
+| `import <name>`          | Import tasks from `<world>/tasknh/<name>.json`        |
 | `reload`                 | Re-sync tasks to all online players (OP only)          |
 | `gui`                    | Open the GUI (player only)                             |
 
-`<id>` is the first 8 characters of a task UUID, shown in `/foreman list` and in the GUI.
+`<id>` is the first 8 characters of a task UUID, shown in `/tasknh list` and in the GUI.
 
 ## GUI Overview
 
@@ -108,7 +108,7 @@ Tasks are stored as a JSON array. Each object supports the following fields:
 
 Valid `status` values: `OPEN`, `IN_PROGRESS`, `DONE`.
 
-Files are saved to and loaded from `<world save>/foreman/`. The `.json` extension is added automatically.
+Files are saved to and loaded from `<world save>/tasknh/`. The `.json` extension is added automatically.
 
 ## License
 

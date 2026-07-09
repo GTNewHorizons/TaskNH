@@ -1,0 +1,79 @@
+# Key binding
+key.tasknh.open=Open TaskNH
+key.categories.tasknh=TaskNH
+
+# GUI labels
+tasknh.gui.new_task=+ New Task
+tasknh.gui.search=Search...
+tasknh.gui.tab.open=To do
+tasknh.gui.tab.in_progress=Doing
+tasknh.gui.tab.done=Done
+tasknh.gui.detail.description=Description:
+tasknh.gui.detail.status=Status:
+tasknh.gui.detail.assignees=Assignees:
+tasknh.gui.detail.location=Location:
+tasknh.gui.detail.subtasks=Subtasks:
+tasknh.gui.detail.icon=Icon:
+tasknh.gui.detail.icon_hint=Drag an item here from NEI to use as the task icon
+tasknh.gui.detail.set_icon=Set to held
+tasknh.gui.detail.pos=Pos
+tasknh.gui.detail.show_on_map=Show on map:
+tasknh.gui.detail.show_on_map.on=ON
+tasknh.gui.detail.show_on_map.off=OFF
+tasknh.gui.detail.icon_none=(none)
+tasknh.gui.row.more= +%s more
+tasknh.gui.placeholder=Select a task or press '+ New Task'.
+tasknh.gui.not_found=Task not found.
+tasknh.chat.assigned=§a[TaskNH]§r You have been assigned to: §e%s
+tasknh.chat.login.new_tasks=[TaskNH] You have %s new tasks assigned to you:
+tasknh.chat.login.task=[TaskNH] New task assigned: "%s"
+tasknh.status.open=Open
+tasknh.status.in_progress=In Progress
+tasknh.status.done=Done
+tasknh.gui.search.tooltip=Search tasks
+tasknh.gui.hud_settings.tooltip=HUD position settings
+tasknh.gui.theme_toggle.tooltip=Toggle light/dark theme
+tasknh.gui.pin=Pin to HUD
+tasknh.gui.unpin=Unpin from HUD
+tasknh.gui.pin.max=Max 5 tasks pinned
+
+# HUD settings screen
+tasknh.hud.settings.hint=Drag handle to reposition HUD  |  ESC to close
+tasknh.hud.settings.scale=Scale:
+tasknh.hud.settings.bg=BG: %s
+tasknh.hud.settings.hud=HUD: %s
+tasknh.hud.settings.subtasks=Subtasks:
+tasknh.hud.settings.tasks=Tasks:
+tasknh.hud.settings.reset=Reset
+tasknh.hud.on=ON
+tasknh.hud.off=OFF
+
+# Command messages
+tasknh.cmd.not_in_team=You are not in a team.
+tasknh.cmd.no_tasks=No tasks.
+tasknh.cmd.no_permission=You don't have permission to use this command.
+tasknh.cmd.synced=Synced tasks to all online players.
+tasknh.cmd.gui_client_only=GUI is client-only.
+tasknh.cmd.must_be_player=Must be run by a player.
+tasknh.cmd.created=Created task [%s] %s
+tasknh.cmd.assigned_to=Assigned %s to %s
+tasknh.cmd.already_assigned=%s is already assigned to %s
+tasknh.cmd.unassigned_from=Unassigned %s from %s
+tasknh.cmd.marked_done=Marked done: %s
+tasknh.cmd.exported=Exported %s tasks to %s
+tasknh.cmd.export_failed=Export failed: %s
+tasknh.cmd.file_not_found=File not found: %s
+tasknh.cmd.imported=Imported %s tasks.
+tasknh.cmd.import_failed=Import failed: %s
+tasknh.cmd.task_not_found=Task not found: %s
+tasknh.cmd.usage.create=Usage: /tasknh create <title>
+tasknh.cmd.usage.assign=Usage: /tasknh assign <id> <player>
+tasknh.cmd.usage.unassign=Usage: /tasknh unassign <id> <player>
+tasknh.cmd.usage.done=Usage: /tasknh done <id>
+tasknh.cmd.usage.import=Usage: /tasknh import <filename>
+tasknh.cmd.usage.open=Usage: /tasknh open <taskId>
+
+tasknh.chat.remind.prefix=[TaskNH] %s wants to remind you of:
+tasknh.chat.remind.message=  "%s"
+tasknh.chat.remind.cooldown=[TaskNH] Wait before reminding this player again.
+tasknh.chat.remind.offline=[TaskNH] That player is not online.

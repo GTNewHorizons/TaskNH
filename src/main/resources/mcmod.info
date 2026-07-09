@@ -6,7 +6,7 @@
 		"description": "Collaborative in-game task tracker for GTNH teams.",
 		"version": "${modVersion}",
 		"mcversion": "${minecraftVersion}",
-		"url": "https://github.com/Eldrinn-Elantey/Foreman",
+		"url": "https://github.com/GTNewHorizons/TaskNH",
 		"updateUrl": "",
 		"authorList": ["Eldrinn_Elantey"],
 		"credits": "",
