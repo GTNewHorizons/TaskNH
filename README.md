@@ -25,7 +25,7 @@ A task management mod for Minecraft 1.7.10 (GregTech: New Horizons). TaskNH lets
 | Minecraft Forge                  | 1.7.10         |
 | GTNHLib                          | 0.10.3+        |
 | ModularUI2                       | 2.3.66-1.7.10+ |
-| Navigator *(optional)*           | 1.1.3+         |
+| Navigator *(optional)*           | 1.1.8+         |
 | NotEnoughItems GTNH *(optional)* | 2.8.93-GTNH+   |
 
 Navigator is only required for map marker support. Without it the mod works normally and the Location section is still available for storing coordinates.
