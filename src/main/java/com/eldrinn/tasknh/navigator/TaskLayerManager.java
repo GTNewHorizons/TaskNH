@@ -85,7 +85,7 @@ public class TaskLayerManager extends InteractableLayerManager {
     }
 
     private boolean onClick(ClickPos pos) {
-        if (pos.isDoubleClick() || pos.getLocationRenderStep() == null) return false;
+        if (pos.getLocationRenderStep() == null) return false;
         TaskMapLocation loc = (TaskMapLocation) pos.getLocationRenderStep()
             .getLocation();
         TaskNHGuiData data = new TaskNHGuiData();

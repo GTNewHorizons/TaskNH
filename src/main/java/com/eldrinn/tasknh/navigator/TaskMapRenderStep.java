@@ -73,6 +73,15 @@ public class TaskMapRenderStep extends UniversalInteractableStep<TaskMapLocation
                 .displayName());
     }
 
+    @Override
+    public void onActionKeyPressed() {
+        if (location.isActiveAsWaypoint()) {
+            TaskLayerManager.INSTANCE.clearActiveWaypoint();
+        } else {
+            TaskLayerManager.INSTANCE.setActiveWaypoint(location.toWaypoint());
+        }
+    }
+
     private static int bgColor(TaskStatus status) {
         return switch (status) {
             case OPEN -> ColorUtils.MAP_FILL_OPEN.getColor();
