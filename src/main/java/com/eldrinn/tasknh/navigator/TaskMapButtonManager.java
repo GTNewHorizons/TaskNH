@@ -12,10 +12,11 @@ import cpw.mods.fml.relauncher.SideOnly;
 public class TaskMapButtonManager extends ButtonManager {
 
     public static final TaskMapButtonManager INSTANCE = new TaskMapButtonManager();
+    static final ResourceLocation ICON = new ResourceLocation("tasknh", "textures/navigator/task_icon.png");
 
     @Override
     public ResourceLocation getIcon(SupportedMods mod, String theme) {
-        return new ResourceLocation("tasknh", "textures/navigator/task_icon.png");
+        return ICON;
     }
 
     @Override

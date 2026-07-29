@@ -16,8 +16,9 @@ import cpw.mods.fml.relauncher.SideOnly;
 public class TaskMapLocation implements IWaypointAndLocationProvider {
 
     private final UUID taskId;
-    private final double blockX;
-    private final double blockZ;
+    private final int blockX;
+    private final int blockY;
+    private final int blockZ;
     private final int dimensionId;
     private final String title;
     private final TaskStatus status;
@@ -26,8 +27,9 @@ public class TaskMapLocation implements IWaypointAndLocationProvider {
     public TaskMapLocation(Task task) {
         Objects.requireNonNull(task.location, "task must have a location to be shown on map");
         this.taskId = task.id;
-        this.blockX = task.location.x + 0.5;
-        this.blockZ = task.location.z + 0.5;
+        this.blockX = task.location.x;
+        this.blockY = task.location.y;
+        this.blockZ = task.location.z;
         this.dimensionId = task.location.dimension;
         this.title = task.title;
         this.status = task.status;
@@ -47,12 +49,12 @@ public class TaskMapLocation implements IWaypointAndLocationProvider {
 
     @Override
     public double getBlockX() {
-        return blockX;
+        return blockX + 0.5;
     }
 
     @Override
     public double getBlockZ() {
-        return blockZ;
+        return blockZ + 0.5;
     }
 
     @Override
@@ -61,13 +63,22 @@ public class TaskMapLocation implements IWaypointAndLocationProvider {
     }
 
     @Override
-    public Waypoint toWaypoint() {
-        int color = switch (status) {
+    public long toLong() {
+        // Navigator requires one stable 64-bit identity; folding the task UUID keeps colocated tasks independent.
+        return taskId.getMostSignificantBits() ^ taskId.getLeastSignificantBits();
+    }
+
+    public int getColor() {
+        return switch (status) {
             case OPEN -> ColorUtils.MAP_WAYPOINT_OPEN.getColor();
             case IN_PROGRESS -> ColorUtils.MAP_WAYPOINT_IN_PROGRESS.getColor();
             case DONE -> ColorUtils.MAP_WAYPOINT_DONE.getColor();
         };
-        return new Waypoint((int) blockX, 64, (int) blockZ, dimensionId, title, color);
+    }
+
+    @Override
+    public Waypoint toWaypoint() {
+        return new Waypoint(blockX, blockY, blockZ, dimensionId, title, getColor());
     }
 
     @Override
@@ -82,7 +93,8 @@ public class TaskMapLocation implements IWaypointAndLocationProvider {
 
     @Override
     public void onWaypointUpdated(Waypoint waypoint) {
-        isActiveAsWaypoint = waypoint.dimensionId == dimensionId && waypoint.blockX == (int) blockX
-            && waypoint.blockZ == (int) blockZ;
+        isActiveAsWaypoint = waypoint.dimensionId == dimensionId && waypoint.blockX == blockX
+            && waypoint.blockY == blockY
+            && waypoint.blockZ == blockZ;
     }
 }
