@@ -27,7 +27,7 @@ A task management mod for Minecraft 1.7.10 (GregTech: New Horizons). TaskNH lets
 | Minecraft Forge                  | 1.7.10         |
 | GTNHLib                          | 0.11.19+       |
 | ModularUI2                       | 2.3.78-1.7.10+ |
-| Navigator *(optional)*           | 1.1.3+         |
+| Navigator *(optional)*           | 1.1.8+         |
 | NotEnoughItems GTNH *(optional)* | 2.8.93-GTNH+   |
 | BetterQuesting *(optional)*      | 3.8.72-GTNH+   |
 | ServerUtilities *(optional)*     | 2.4.0+         |
