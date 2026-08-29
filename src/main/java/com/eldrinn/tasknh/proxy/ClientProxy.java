@@ -45,7 +45,7 @@ public class ClientProxy extends CommonProxy {
             com.gtnewhorizons.navigator.api.NavigatorApi
                 .registerLayerManager(com.eldrinn.tasknh.navigator.TaskLayerManager.INSTANCE);
         }
-        if (cpw.mods.fml.common.Loader.isModLoaded("betterquesting")) {
+        if (com.eldrinn.tasknh.integration.BQIntegration.isAvailable()) {
             com.eldrinn.tasknh.integration.BetterQuestingIntegration.register();
         }
     }
