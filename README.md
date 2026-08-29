@@ -17,20 +17,28 @@ A task management mod for Minecraft 1.7.10 (GregTech: New Horizons). TaskNH lets
 - **Export / import**: dump a team's tasks to a JSON file and reload them on another world or share them
 - **Dark and light themes**: toggle with the sun button in the bottom-right of the GUI
 - **Search**: expandable search bar filters the task list live by title or description
+- **Quest import**: create a task from a BetterQuesting quest via the quest context menu, with required items turned into subtasks
+- **Permissions**: every subcommand has its own permission node, tunable through ServerUtilities ranks
 
 ## Requirements
 
 | Dependency                       | Version        |
 |----------------------------------|----------------|
 | Minecraft Forge                  | 1.7.10         |
-| GTNHLib                          | 0.10.3+        |
-| ModularUI2                       | 2.3.66-1.7.10+ |
+| GTNHLib                          | 0.11.19+       |
+| ModularUI2                       | 2.3.78-1.7.10+ |
 | Navigator *(optional)*           | 1.1.3+         |
 | NotEnoughItems GTNH *(optional)* | 2.8.93-GTNH+   |
+| BetterQuesting *(optional)*      | 3.8.72-GTNH+   |
+| ServerUtilities *(optional)*     | 2.4.0+         |
 
 Navigator is only required for map marker support. Without it the mod works normally and the Location section is still available for storing coordinates.
 
 NEI is only required for the icon ghost slot. Without it the icon slot is visible but cannot be interacted with.
+
+BetterQuesting is only required for the quest context menu entry. Older BetterQuesting versions without the context menu API are detected on load and the integration is skipped.
+
+ServerUtilities is only required for rank-based permissions. Without it, `reload`, `export` and `import` require OP and every other subcommand is open to all players.
 
 ## Installation
 
@@ -45,7 +53,7 @@ NEI is only required for the icon ghost slot. Without it the icon slot is visibl
 
 ## Commands
 
-All commands are available to any player. The `reload` subcommand requires OP.
+Access is controlled per subcommand by the `tasknh.<subcommand>` permission nodes. Without ServerUtilities, `reload`, `export` and `import` require OP and the rest are available to any player.
 
 ```
 /tasknh <subcommand>
@@ -60,8 +68,9 @@ All commands are available to any player. The `reload` subcommand requires OP.
 | `done <id>`              | Mark a task as Done                                    |
 | `export [name]`          | Export all team tasks to `<world>/tasknh/<name>.json` |
 | `import <name>`          | Import tasks from `<world>/tasknh/<name>.json`        |
-| `reload`                 | Re-sync tasks to all online players (OP only)          |
+| `reload`                 | Re-sync tasks to all online players                    |
 | `gui`                    | Open the GUI (player only)                             |
+| `open <uuid>`            | Open the GUI on a specific task (player only)          |
 
 `<id>` is the first 8 characters of a task UUID, shown in `/tasknh list` and in the GUI.
 
