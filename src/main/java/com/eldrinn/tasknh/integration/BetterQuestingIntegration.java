@@ -24,7 +24,7 @@ import bq_standard.tasks.TaskRetrieval;
 
 /**
  * Registers TaskNH's entry in BetterQuesting's quest context menu.
- * Only loaded when BetterQuesting is present (guarded by Loader.isModLoaded in ClientProxy).
+ * Only loaded when the BetterQuesting context menu API is present (guarded by BQIntegration.isAvailable).
  */
 public final class BetterQuestingIntegration {
 
