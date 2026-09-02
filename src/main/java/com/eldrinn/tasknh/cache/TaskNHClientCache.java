@@ -27,6 +27,18 @@ public class TaskNHClientCache {
     private static final PinnedTasksConfig pinConfig = new PinnedTasksConfig();
     private static final List<PlayerEntry> teamMembers = new ArrayList<>();
 
+    /**
+     * Task we edited locally and sent to the server, kept until the server confirms it. A sync
+     * caused by an earlier edit carries server state that predates this one and would otherwise
+     * drop it, which loses subtasks typed in quick succession.
+     */
+    @Nullable
+    private static Task pendingEdit = null;
+
+    public static void setPendingEdit(@Nullable Task task) {
+        pendingEdit = task;
+    }
+
     public static void loadConfig() {
         pinConfig.load();
     }
@@ -35,6 +47,13 @@ public class TaskNHClientCache {
         tasks.clear();
         for (Task t : incoming) {
             tasks.put(t.id, t);
+        }
+        if (pendingEdit != null) {
+            if (com.eldrinn.tasknh.gui.TaskNHGui.isWithinSelfEditWindow()) {
+                tasks.put(pendingEdit.id, pendingEdit);
+            } else {
+                pendingEdit = null; // confirmed by now, server state wins again
+            }
         }
         // Remove stale pins in one batch — single save if anything changed
         pinConfig.removeStale(tasks.keySet());

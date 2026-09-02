@@ -68,11 +68,34 @@ public class TaskNHGui {
     }
 
     /**
+     * When we last sent an edit. Each edit comes back as a sync, and rebuilding on that echo kills
+     * widget focus and makes rows jump, so a sync arriving right after our own edit is ignored.
+     * ponytail: a time window instead of counting echoes, so a dropped or missing answer can't
+     * leave the GUI permanently deaf to syncs. A teammate's edit landing inside the window shows up
+     * with the next sync instead of immediately.
+     */
+    private static long lastSelfEditTime = 0;
+
+    private static final long SELF_SYNC_WINDOW_MS = 1000;
+
+    /** Called before sending an edit the server answers with a sync packet. */
+    public static void expectSelfSync() {
+        lastSelfEditTime = System.currentTimeMillis();
+    }
+
+    /** True while the server still owes us the sync for an edit we just sent. */
+    public static boolean isWithinSelfEditWindow() {
+        return System.currentTimeMillis() - lastSelfEditTime < SELF_SYNC_WINDOW_MS;
+    }
+
+    /**
      * Called by SyncAllTasksPacket after cache is updated.
      * If the TaskNH GUI is currently open, schedules a rebuild with fresh data.
      */
     @SideOnly(Side.CLIENT)
     public static void notifySyncReceived() {
+        // Echo of our own edit: the cache is already up to date, so don't rebuild.
+        if (isWithinSelfEditWindow()) return;
         if (activeData == null) return;
         Minecraft mc = Minecraft.getMinecraft();
         if (!(mc.currentScreen instanceof IMuiScreen)) {

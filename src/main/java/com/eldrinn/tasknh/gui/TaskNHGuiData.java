@@ -31,9 +31,6 @@ public class TaskNHGuiData {
     /** Whether the search field is expanded. */
     public boolean searchExpanded = false;
 
-    /** One-shot: focus the subtask add field after the next rebuild (Enter keeps typing). */
-    public boolean focusSubtaskAdd = false;
-
     /** Scroll state of the task list, kept across rebuilds. */
     public final ScrollMemoryList.Memory listScroll = new ScrollMemoryList.Memory();
 

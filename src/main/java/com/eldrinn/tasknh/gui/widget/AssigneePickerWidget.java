@@ -75,7 +75,7 @@ public class AssigneePickerWidget extends Flow {
                         } else {
                             task.assignees.add(new AssignedPlayer(player.id(), System.currentTimeMillis()));
                         }
-                        TaskNHNetwork.CHANNEL.sendToServer(new UpdateTaskPacket(task));
+                        TaskNHNetwork.sendEditToServer(task, new UpdateTaskPacket(task));
                         TaskNHGui.open(data);
                         return true;
                     }));
