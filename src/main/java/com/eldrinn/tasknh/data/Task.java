@@ -24,6 +24,9 @@ public class Task {
     @Nullable
     public String iconItem; // format: "modid:itemname:meta", e.g. "minecraft:diamond:0"
     public boolean showOnMap = false;
+    /** Parent task id, or null for a root task. Only one nesting level is allowed. */
+    @Nullable
+    public UUID parentId;
     public final List<Subtask> subtasks;
     public final List<Comment> comments; // soft limit enforced on add: max 50
 
@@ -55,6 +58,10 @@ public class Task {
 
         if (iconItem != null) tag.setString("iconItem", iconItem);
         tag.setBoolean("showOnMap", showOnMap);
+        if (parentId != null) {
+            tag.setLong("parentMost", parentId.getMostSignificantBits());
+            tag.setLong("parentLeast", parentId.getLeastSignificantBits());
+        }
 
         NBTTagList subtaskList = new NBTTagList();
         for (Subtask s : subtasks) subtaskList.appendTag(s.toNBT());
@@ -85,6 +92,9 @@ public class Task {
 
         if (tag.hasKey("iconItem")) task.iconItem = tag.getString("iconItem");
         task.showOnMap = tag.getBoolean("showOnMap");
+        if (tag.hasKey("parentMost")) {
+            task.parentId = new UUID(tag.getLong("parentMost"), tag.getLong("parentLeast"));
+        }
 
         NBTTagList subtaskList = tag.getTagList("subtasks", Constants.NBT.TAG_COMPOUND);
         for (int i = 0; i < subtaskList.tagCount(); i++) {
@@ -114,6 +124,11 @@ public class Task {
 
         buf.writeStringToBuffer(iconItem != null ? iconItem : "");
         buf.writeBoolean(showOnMap);
+        buf.writeBoolean(parentId != null);
+        if (parentId != null) {
+            buf.writeLong(parentId.getMostSignificantBits());
+            buf.writeLong(parentId.getLeastSignificantBits());
+        }
 
         buf.writeInt(subtasks.size());
         for (Subtask s : subtasks) s.writeToBuf(buf);
@@ -146,6 +161,9 @@ public class Task {
         String icon = buf.readStringFromBuffer(256);
         task.iconItem = icon.isEmpty() ? null : icon;
         task.showOnMap = buf.readBoolean();
+        if (buf.readBoolean()) {
+            task.parentId = new UUID(buf.readLong(), buf.readLong());
+        }
 
         int subtaskCount = buf.readInt();
         if (subtaskCount < 0 || subtaskCount > 200) throw new IOException("Invalid subtask count: " + subtaskCount);

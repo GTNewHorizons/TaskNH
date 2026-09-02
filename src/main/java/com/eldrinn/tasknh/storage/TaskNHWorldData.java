@@ -93,11 +93,13 @@ public class TaskNHWorldData extends WorldSavedData {
         }
     }
 
+    /** Deletes the task and, since nesting is one level deep, its child tasks. */
     public void deleteTask(UUID teamId, UUID taskId) {
         LinkedHashMap<UUID, Task> map = teamTasks.get(teamId);
-        if (map != null && map.remove(taskId) != null) {
-            markDirty();
-        }
+        if (map == null || map.remove(taskId) == null) return;
+        map.values()
+            .removeIf(t -> taskId.equals(t.parentId));
+        markDirty();
     }
 
     /** Called on TeamMergeEvent — moves all tasks from consumed team to surviving team. */

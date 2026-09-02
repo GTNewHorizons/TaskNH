@@ -98,7 +98,7 @@ public class HudSettingsScreen extends GuiScreen {
         cx += 20;
 
         // Subtasks
-        String subtasksKey = StatCollector.translateToLocal("tasknh.hud.settings.subtasks");
+        String subtasksKey = StatCollector.translateToLocal("tasknh.hud.settings.checklist");
         fontRendererObj.drawStringWithShadow(subtasksKey, cx, py + 7, ColorUtils.TEXT_GRAY.getColor());
         cx += fontRendererObj.getStringWidth(subtasksKey) + 4;
 
@@ -222,7 +222,7 @@ public class HudSettingsScreen extends GuiScreen {
         cx += 20;
 
         // Subtasks
-        cx += fontRendererObj.getStringWidth(StatCollector.translateToLocal("tasknh.hud.settings.subtasks")) + 4;
+        cx += fontRendererObj.getStringWidth(StatCollector.translateToLocal("tasknh.hud.settings.checklist")) + 4;
         if (mouseX >= cx && mouseX <= cx + 14) {
             cfg.setMaxSubtasksShown(cfg.getMaxSubtasksShown() - 1);
             return;

@@ -91,7 +91,10 @@ public class TaskDetailWidget extends Flow {
         // Header: [back 20] [gap 4] [icon 20] [title fills rest] [delete 20] [pin 20]
         final int BACK_BTN_W = EL_H; // 20px
         final int HEADER_GAP = 4;
-        final int titleW = isNew ? W - BACK_BTN_W - HEADER_GAP - EL_H : W - BACK_BTN_W - HEADER_GAP - EL_H * 3;
+        // Subtasks can't be pinned, so their header has no pin button.
+        final boolean showPin = !isNew && task.parentId == null;
+        final int headerButtons = isNew ? 1 : (showPin ? 3 : 2);
+        final int titleW = W - BACK_BTN_W - HEADER_GAP - EL_H * headerButtons;
         Flow header = Flow.row()
             .size(W, ROW_H);
 
@@ -146,31 +149,56 @@ public class TaskDetailWidget extends Flow {
                         return true;
                     }));
 
-            boolean pinned = TaskNHClientCache.isPinned(task.id);
-            boolean canPin = TaskNHClientCache.canPin();
-            UITexture pinIcon;
-            if (pinned) {
-                pinIcon = GuiTextures.FAVORITE.withColorOverride(ColorUtils.PIN_ACTIVE.getColor());
-            } else if (canPin) {
-                pinIcon = GuiTextures.FAVORITE_OUTLINE;
-            } else {
-                pinIcon = GuiTextures.FAVORITE_OUTLINE.withColorOverride(ColorUtils.PIN_INACTIVE.getColor());
-            }
-            ButtonWidget<?> pinBtn = new ButtonWidget<>();
-            pinBtn.size(EL_H, EL_H);
-            pinBtn.overlay(pinIcon);
-            header.child(pinBtn.onMousePressed(btn -> {
-                if (btn != 0) return false;
+            if (showPin) {
+                boolean pinned = TaskNHClientCache.isPinned(task.id);
+                boolean canPin = TaskNHClientCache.canPin();
+                UITexture pinIcon;
                 if (pinned) {
-                    TaskNHClientCache.unpin(task.id);
+                    pinIcon = GuiTextures.FAVORITE.withColorOverride(ColorUtils.PIN_ACTIVE.getColor());
+                } else if (canPin) {
+                    pinIcon = GuiTextures.FAVORITE_OUTLINE;
                 } else {
-                    TaskNHClientCache.pin(task.id);
+                    pinIcon = GuiTextures.FAVORITE_OUTLINE.withColorOverride(ColorUtils.PIN_INACTIVE.getColor());
                 }
-                TaskNHGui.open(data);
-                return true;
-            }));
+                ButtonWidget<?> pinBtn = new ButtonWidget<>();
+                pinBtn.size(EL_H, EL_H);
+                pinBtn.overlay(pinIcon);
+                header.child(pinBtn.onMousePressed(btn -> {
+                    if (btn != 0) return false;
+                    if (pinned) {
+                        TaskNHClientCache.unpin(task.id);
+                    } else {
+                        TaskNHClientCache.pin(task.id);
+                    }
+                    TaskNHGui.open(data);
+                    return true;
+                }));
+            }
         }
         formList.child(header);
+
+        // Child tasks only nest one level: a child shows a link back to its parent, a root shows its children.
+        if (task.parentId != null) {
+            Task parent = TaskNHClientCache.get(task.parentId);
+            String parentTitle = parent != null ? parent.title : t("tasknh.gui.not_found");
+            var parentLabel = new TextWidget<>(t("tasknh.gui.detail.parent") + " " + parentTitle);
+            parentLabel.size(W - EL_H, EL_H);
+            parentLabel.textAlign(Alignment.CenterLeft);
+            parentLabel.marginLeft(4);
+            formList.child(
+                Flow.row()
+                    .size(W, ROW_H)
+                    .child(
+                        new ButtonWidget<>().size(EL_H, EL_H)
+                            .overlay(GuiTextures.LEFTLOAD)
+                            .onMousePressed(btn -> {
+                                if (btn != 0) return false;
+                                data.selectTask(task.parentId);
+                                TaskNHGui.open(data);
+                                return true;
+                            }))
+                    .child(parentLabel));
+        }
 
         // Description
         var descLabel = new TextWidget<>(t("tasknh.gui.detail.description"));
@@ -297,8 +325,16 @@ public class TaskDetailWidget extends Flow {
         formList.child(locationHeader);
         formList.child(buildLocationRow());
 
-        // Subtasks
-        var subtasksLabel = new TextWidget<>(t("tasknh.gui.detail.subtasks"));
+        // Subtasks — hidden for a subtask itself (one level only) and for a task that isn't saved yet
+        if (!isNew && task.parentId == null) {
+            var childrenLabel = new TextWidget<>(t("tasknh.gui.detail.subtasks"));
+            childrenLabel.size(W, 14);
+            formList.child(childrenLabel);
+            formList.child(buildChildTaskList());
+        }
+
+        // Checklist
+        var subtasksLabel = new TextWidget<>(t("tasknh.gui.detail.checklist"));
         subtasksLabel.size(W, 14);
         formList.child(subtasksLabel);
         formList.child(buildSubtaskList());
@@ -393,6 +429,73 @@ public class TaskDetailWidget extends Flow {
                 }));
 
         return row;
+    }
+
+    private Flow buildChildTaskList() {
+        final int W = TaskNHGui.LEFT_WIDTH - 2 * TaskNHGui.PADDING - SCROLLBAR_W;
+        Flow col = Flow.column();
+        col.size(W, ROW_H);
+        col.coverChildrenHeight(ROW_H);
+
+        for (Task child : TaskNHClientCache.getAll()) {
+            if (!task.id.equals(child.parentId)) continue;
+            var childTitle = new TextWidget<>(child.title + " [" + child.status.displayName() + "]");
+            childTitle.size(W - EL_H * 2, EL_H);
+            childTitle.textAlign(Alignment.CenterLeft);
+            childTitle.marginLeft(4);
+            col.child(
+                Flow.row()
+                    .size(W, ROW_H)
+                    .child(
+                        new ButtonWidget<>().size(W - EL_H, EL_H)
+                            .child(childTitle)
+                            .onMousePressed(btn -> {
+                                if (btn != 0) return false;
+                                data.selectTask(child.id);
+                                TaskNHGui.open(data);
+                                return true;
+                            }))
+                    .child(
+                        new ButtonWidget<>().size(EL_H, EL_H)
+                            .overlay(ICON_REMOVE)
+                            .onMousePressed(btn -> {
+                                if (btn != 0) return false;
+                                TaskNHNetwork.CHANNEL.sendToServer(new DeleteTaskPacket(child.id));
+                                TaskNHGui.open(data);
+                                return true;
+                            })));
+        }
+
+        // Add child task row
+        String[] newTitle = { "" };
+        PlainTextField addField = new PlainTextField();
+        addField.size(W - EL_H, EL_H);
+        addField.setTextColor(ColorUtils.TEXT_WHITE.getColor());
+        addField.autoUpdateOnChange(true);
+        addField.value(new StringValue.Dynamic(() -> newTitle[0], val -> newTitle[0] = val));
+        Runnable addChild = () -> {
+            String title = newTitle[0].trim();
+            if (title.isEmpty()) return;
+            Task child = new Task(UUID.randomUUID(), title, "", TaskStatus.OPEN);
+            child.parentId = task.id;
+            newTitle[0] = "";
+            TaskNHNetwork.CHANNEL.sendToServer(new CreateTaskPacket(child));
+            TaskNHGui.open(data);
+        };
+        addField.onEnter(addChild::run);
+        col.child(
+            Flow.row()
+                .size(W, ROW_H)
+                .child(addField)
+                .child(
+                    new ButtonWidget<>().size(EL_H, EL_H)
+                        .overlay(ICON_ADD)
+                        .onMousePressed(btn -> {
+                            if (btn != 0) return false;
+                            addChild.run();
+                            return true;
+                        })));
+        return col;
     }
 
     private Flow buildSubtaskList() {
