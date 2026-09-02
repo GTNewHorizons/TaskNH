@@ -7,6 +7,8 @@ import net.minecraftforge.common.MinecraftForge;
 
 import com.eldrinn.tasknh.command.TaskNHCommand;
 import com.eldrinn.tasknh.command.TaskNHPermissions;
+import com.eldrinn.tasknh.config.TaskNHConfig;
+import com.eldrinn.tasknh.event.ItemTrackHandler;
 import com.eldrinn.tasknh.event.PlayerLoginHandler;
 import com.eldrinn.tasknh.event.PlayerLogoutHandler;
 import com.eldrinn.tasknh.event.TeamMergeListener;
@@ -23,6 +25,7 @@ public class CommonProxy {
     public static final Map<String, Long> remindCooldowns = new LinkedHashMap<>();
 
     public void preInit(FMLPreInitializationEvent event) {
+        TaskNHConfig.load(event);
         TaskNHNetwork.init();
     }
 
@@ -34,6 +37,12 @@ public class CommonProxy {
         FMLCommonHandler.instance()
             .bus()
             .register(new PlayerLogoutHandler());
+        // ItemTrackHandler listens on both buses: EntityJoinWorldEvent (Forge) and ServerTickEvent (FML)
+        ItemTrackHandler itemTrackHandler = new ItemTrackHandler();
+        FMLCommonHandler.instance()
+            .bus()
+            .register(itemTrackHandler);
+        MinecraftForge.EVENT_BUS.register(itemTrackHandler);
         MinecraftForge.EVENT_BUS.register(new TeamMergeListener());
         TaskNHPermissions.registerNodes();
     }
