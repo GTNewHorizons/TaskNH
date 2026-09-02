@@ -23,6 +23,8 @@ public class Task {
     public TaskLocation location;
     @Nullable
     public String iconItem; // format: "modid:itemname:meta", e.g. "minecraft:diamond:0"
+    @Nullable
+    public String trackItem; // same format as iconItem; task auto-completes once seen in a member's inventory
     public boolean showOnMap = false;
     public final List<Subtask> subtasks;
     public final List<Comment> comments; // soft limit enforced on add: max 50
@@ -54,6 +56,7 @@ public class Task {
         if (location != null) tag.setTag("location", location.toNBT());
 
         if (iconItem != null) tag.setString("iconItem", iconItem);
+        if (trackItem != null) tag.setString("trackItem", trackItem);
         tag.setBoolean("showOnMap", showOnMap);
 
         NBTTagList subtaskList = new NBTTagList();
@@ -84,6 +87,7 @@ public class Task {
         }
 
         if (tag.hasKey("iconItem")) task.iconItem = tag.getString("iconItem");
+        if (tag.hasKey("trackItem")) task.trackItem = tag.getString("trackItem");
         task.showOnMap = tag.getBoolean("showOnMap");
 
         NBTTagList subtaskList = tag.getTagList("subtasks", Constants.NBT.TAG_COMPOUND);
@@ -113,6 +117,7 @@ public class Task {
         if (location != null) location.writeToBuf(buf);
 
         buf.writeStringToBuffer(iconItem != null ? iconItem : "");
+        buf.writeStringToBuffer(trackItem != null ? trackItem : "");
         buf.writeBoolean(showOnMap);
 
         buf.writeInt(subtasks.size());
@@ -145,6 +150,8 @@ public class Task {
 
         String icon = buf.readStringFromBuffer(256);
         task.iconItem = icon.isEmpty() ? null : icon;
+        String track = buf.readStringFromBuffer(256);
+        task.trackItem = track.isEmpty() ? null : track;
         task.showOnMap = buf.readBoolean();
 
         int subtaskCount = buf.readInt();

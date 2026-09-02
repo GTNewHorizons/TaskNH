@@ -223,6 +223,31 @@ public class TaskDetailWidget extends Flow {
         }
         formList.child(statusRow);
 
+        // Tracked item — drag from NEI to set, right-click to clear.
+        // Task auto-completes once this item is seen in a team member's inventory.
+        Flow trackRow = Flow.row()
+            .size(W, ROW_H);
+        var trackLabel = new TextWidget<>(t("tasknh.gui.detail.track_item"));
+        trackLabel.size(W - EL_H, EL_H);
+        trackLabel.textAlign(Alignment.CenterLeft);
+        trackRow.child(trackLabel);
+        trackRow.child(new IconSlotWidget(new IconSlotWidget.ItemHolder() {
+
+            @Override
+            public String get() {
+                return task.trackItem;
+            }
+
+            @Override
+            public void set(String v) {
+                task.trackItem = v;
+            }
+        }, () -> {
+            sendUpdate();
+            TaskNHGui.open(data);
+        }, "tasknh.gui.detail.track_item_hint").size(EL_H, EL_H));
+        formList.child(trackRow);
+
         // Assignees
         var assigneesLabel = new TextWidget<>(t("tasknh.gui.detail.assignees"));
         assigneesLabel.size(W, 14);

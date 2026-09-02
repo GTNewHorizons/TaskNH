@@ -14,5 +14,6 @@ public class PlayerLogoutHandler {
         if (!(event.player instanceof EntityPlayerMP player)) return;
         TaskNHWorldData.get()
             .setPlayerLastSeen(player.getUniqueID(), System.currentTimeMillis());
+        ItemTrackHandler.forget(player);
     }
 }
