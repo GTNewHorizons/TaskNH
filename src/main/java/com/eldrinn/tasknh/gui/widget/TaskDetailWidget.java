@@ -10,9 +10,7 @@ import com.cleanroommc.modularui.drawable.UITexture;
 import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.value.BoolValue;
 import com.cleanroommc.modularui.value.StringValue;
-import com.cleanroommc.modularui.widget.scroll.VerticalScrollData;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
-import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.TextWidget;
 import com.cleanroommc.modularui.widgets.ToggleButton;
 import com.cleanroommc.modularui.widgets.layout.Flow;
@@ -50,10 +48,8 @@ public class TaskDetailWidget extends Flow {
     private final boolean isNew;
     // Tracks whether CreateTaskPacket has been sent so subsequent edits use UpdateTaskPacket
     private boolean created = false;
-    @SuppressWarnings("rawtypes")
-    private final ListWidget formList;
+    private final ScrollMemoryList formList;
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     public TaskDetailWidget(TaskNHGuiData data) {
         super(com.cleanroommc.modularui.api.GuiAxis.Y);
         this.data = data;
@@ -63,8 +59,7 @@ public class TaskDetailWidget extends Flow {
         size(TaskNHGui.LEFT_WIDTH, height);
         padding(TaskNHGui.PADDING);
 
-        this.formList = new ListWidget();
-        this.formList.scrollDirection(new VerticalScrollData(false, SCROLLBAR_W));
+        this.formList = new ScrollMemoryList(data.detailScroll, SCROLLBAR_W);
         this.formList.size(innerW, innerH);
         child(this.formList);
 

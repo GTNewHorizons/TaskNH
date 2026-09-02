@@ -6,6 +6,7 @@ import javax.annotation.Nullable;
 
 import com.cleanroommc.modularui.widgets.PagedWidget;
 import com.eldrinn.tasknh.data.TaskStatus;
+import com.eldrinn.tasknh.gui.widget.ScrollMemoryList;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -33,20 +34,29 @@ public class TaskNHGuiData {
     /** One-shot: focus the subtask add field after the next rebuild (Enter keeps typing). */
     public boolean focusSubtaskAdd = false;
 
+    /** Scroll state of the task list, kept across rebuilds. */
+    public final ScrollMemoryList.Memory listScroll = new ScrollMemoryList.Memory();
+
+    /** Scroll state of the task detail form, kept across rebuilds. */
+    public final ScrollMemoryList.Memory detailScroll = new ScrollMemoryList.Memory();
+
     public final PagedWidget.Controller pageController = new PagedWidget.Controller();
 
     public void selectTask(UUID id) {
         this.selectedTaskId = id;
         this.createMode = false;
+        this.detailScroll.reset();
     }
 
     public void enterCreateMode() {
         this.selectedTaskId = null;
         this.createMode = true;
+        this.detailScroll.reset();
     }
 
     public void clear() {
         this.selectedTaskId = null;
         this.createMode = false;
+        this.detailScroll.reset();
     }
 }
