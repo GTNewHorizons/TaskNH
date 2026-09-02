@@ -144,9 +144,7 @@ public class TaskDetailWidget extends Flow {
                     .overlay(ICON_REMOVE)
                     .onMousePressed(btn -> {
                         if (btn != 0) return false;
-                        // Drop the pending edit, otherwise it would put the deleted task back.
-                        TaskNHClientCache.setPendingEdit(null);
-                        TaskNHNetwork.CHANNEL.sendToServer(new DeleteTaskPacket(task.id));
+                        TaskNHNetwork.sendDeleteToServer(task.id, new DeleteTaskPacket(task.id));
                         data.clear();
                         TaskNHGui.open(data);
                         return true;
@@ -489,7 +487,7 @@ public class TaskDetailWidget extends Flow {
                             .overlay(ICON_REMOVE)
                             .onMousePressed(btn -> {
                                 if (btn != 0) return false;
-                                TaskNHNetwork.CHANNEL.sendToServer(new DeleteTaskPacket(child.id));
+                                TaskNHNetwork.sendDeleteToServer(child.id, new DeleteTaskPacket(child.id));
                                 TaskNHGui.open(data);
                                 return true;
                             })));
@@ -508,7 +506,7 @@ public class TaskDetailWidget extends Flow {
             Task child = new Task(UUID.randomUUID(), title, "", TaskStatus.OPEN);
             child.parentId = task.id;
             newTitle[0] = "";
-            TaskNHNetwork.CHANNEL.sendToServer(new CreateTaskPacket(child));
+            TaskNHNetwork.sendEditToServer(child, new CreateTaskPacket(child));
             TaskNHGui.open(data);
         };
         addField.onEnter(addChild::run);

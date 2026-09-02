@@ -28,15 +28,30 @@ public class TaskNHClientCache {
     private static final List<PlayerEntry> teamMembers = new ArrayList<>();
 
     /**
-     * Task we edited locally and sent to the server, kept until the server confirms it. A sync
-     * caused by an earlier edit carries server state that predates this one and would otherwise
-     * drop it, which loses subtasks typed in quick succession.
+     * Edit we made locally and sent to the server, applied to the cache right away and kept until
+     * the server confirms it. A sync caused by an earlier edit carries server state that predates
+     * this one and would otherwise undo it.
      */
     @Nullable
     private static Task pendingEdit = null;
 
-    public static void setPendingEdit(@Nullable Task task) {
+    @Nullable
+    private static UUID pendingDelete = null;
+
+    /** Applies an edit locally, so the GUI shows it without waiting for the server. */
+    public static void putLocal(Task task) {
+        tasks.put(task.id, task);
         pendingEdit = task;
+        pendingDelete = null;
+    }
+
+    /** Applies a deletion locally, cascading to subtasks the way the server does. */
+    public static void removeLocal(UUID taskId) {
+        tasks.remove(taskId);
+        tasks.values()
+            .removeIf(t -> taskId.equals(t.parentId));
+        pendingDelete = taskId;
+        if (pendingEdit != null && pendingEdit.id.equals(taskId)) pendingEdit = null;
     }
 
     public static void loadConfig() {
@@ -48,12 +63,13 @@ public class TaskNHClientCache {
         for (Task t : incoming) {
             tasks.put(t.id, t);
         }
-        if (pendingEdit != null) {
-            if (com.eldrinn.tasknh.gui.TaskNHGui.isWithinSelfEditWindow()) {
-                tasks.put(pendingEdit.id, pendingEdit);
-            } else {
-                pendingEdit = null; // confirmed by now, server state wins again
-            }
+        if (com.eldrinn.tasknh.gui.TaskNHGui.isWithinSelfEditWindow()) {
+            if (pendingEdit != null) tasks.put(pendingEdit.id, pendingEdit);
+            if (pendingDelete != null) removeLocal(pendingDelete);
+        } else {
+            // Confirmed by now, server state wins again.
+            pendingEdit = null;
+            pendingDelete = null;
         }
         // Remove stale pins in one batch — single save if anything changed
         pinConfig.removeStale(tasks.keySet());
