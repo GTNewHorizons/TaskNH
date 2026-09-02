@@ -16,7 +16,7 @@ import org.lwjgl.opengl.GL12;
 
 import com.eldrinn.tasknh.cache.TaskNHClientCache;
 import com.eldrinn.tasknh.config.PinnedTasksConfig;
-import com.eldrinn.tasknh.data.Subtask;
+import com.eldrinn.tasknh.data.ChecklistItem;
 import com.eldrinn.tasknh.data.Task;
 import com.eldrinn.tasknh.data.TaskStatus;
 import com.eldrinn.tasknh.gui.ColorUtils;
@@ -103,7 +103,7 @@ public class HudRenderer {
     }
 
     private int drawTaskBlock(FontRenderer fr, PinnedTasksConfig cfg, Task task, int x, int y, int blockW) {
-        int maxSubtasks = cfg.getMaxSubtasksShown();
+        int maxChecklist = cfg.getMaxChecklistShown();
         int textW = blockW - PADDING * 2;
         String statusText = "[" + task.status.displayName()
             .toUpperCase() + "]";
@@ -124,20 +124,20 @@ public class HudRenderer {
             }
         }
 
-        if (!task.subtasks.isEmpty()) {
-            List<Subtask> incomplete = task.subtasks.stream()
+        if (!task.checklist.isEmpty()) {
+            List<ChecklistItem> incomplete = task.checklist.stream()
                 .filter(st -> !st.checked)
                 .collect(java.util.stream.Collectors.toList());
-            List<Subtask> complete = task.subtasks.stream()
+            List<ChecklistItem> complete = task.checklist.stream()
                 .filter(st -> st.checked)
                 .collect(java.util.stream.Collectors.toList());
 
             int prefixW = fr.getStringWidth("- ");
-            int subtaskW = textW - PADDING - prefixW;
+            int checklistW = textW - PADDING - prefixW;
             int shown = 0;
-            for (Subtask st : incomplete) {
-                if (shown >= maxSubtasks) break;
-                List<String> lines = fr.listFormattedStringToWidth(st.title, subtaskW);
+            for (ChecklistItem st : incomplete) {
+                if (shown >= maxChecklist) break;
+                List<String> lines = fr.listFormattedStringToWidth(st.title, checklistW);
                 fr.drawStringWithShadow("- " + lines.get(0), x + PADDING, y, ColorUtils.TEXT_WHITE.getColor());
                 y += LINE_H;
                 for (int i = 1; i < lines.size(); i++) {
@@ -146,9 +146,9 @@ public class HudRenderer {
                 }
                 shown++;
             }
-            for (Subtask st : complete) {
-                if (shown >= maxSubtasks) break;
-                List<String> lines = fr.listFormattedStringToWidth(st.title, subtaskW);
+            for (ChecklistItem st : complete) {
+                if (shown >= maxChecklist) break;
+                List<String> lines = fr.listFormattedStringToWidth(st.title, checklistW);
                 fr.drawStringWithShadow("§m- " + lines.get(0) + "§r", x + PADDING, y, ColorUtils.TEXT_GRAY.getColor());
                 y += LINE_H;
                 for (int i = 1; i < lines.size(); i++) {
@@ -162,7 +162,7 @@ public class HudRenderer {
                 shown++;
             }
 
-            int remaining = task.subtasks.size() - shown;
+            int remaining = task.checklist.size() - shown;
             if (remaining > 0) {
                 fr.drawStringWithShadow(
                     StatCollector.translateToLocalFormatted("tasknh.gui.row.more", remaining),
@@ -177,11 +177,11 @@ public class HudRenderer {
     }
 
     static int totalHeight(List<Task> pinned, PinnedTasksConfig cfg, FontRenderer fr) {
-        int maxSub = cfg.getMaxSubtasksShown();
+        int maxSub = cfg.getMaxChecklistShown();
         int blockW = maxBlockWidth(pinned, fr, cfg);
         int textW = blockW - PADDING * 2;
         int prefixW = fr.getStringWidth("- ");
-        int subtaskW = textW - PADDING - prefixW;
+        int checklistW = textW - PADDING - prefixW;
         int h = 0;
         for (Task t : pinned) {
             h += LINE_H; // status
@@ -189,34 +189,34 @@ public class HudRenderer {
             h += LINE_H * fr.listFormattedStringToWidth(t.title, titleW)
                 .size();
 
-            List<Subtask> incomplete = t.subtasks.stream()
+            List<ChecklistItem> incomplete = t.checklist.stream()
                 .filter(st -> !st.checked)
                 .collect(java.util.stream.Collectors.toList());
-            List<Subtask> complete = t.subtasks.stream()
+            List<ChecklistItem> complete = t.checklist.stream()
                 .filter(st -> st.checked)
                 .collect(java.util.stream.Collectors.toList());
 
             int shown = 0;
-            for (Subtask st : incomplete) {
+            for (ChecklistItem st : incomplete) {
                 if (shown >= maxSub) break;
-                h += LINE_H * fr.listFormattedStringToWidth(st.title, subtaskW)
+                h += LINE_H * fr.listFormattedStringToWidth(st.title, checklistW)
                     .size();
                 shown++;
             }
-            for (Subtask st : complete) {
+            for (ChecklistItem st : complete) {
                 if (shown >= maxSub) break;
-                h += LINE_H * fr.listFormattedStringToWidth(st.title, subtaskW)
+                h += LINE_H * fr.listFormattedStringToWidth(st.title, checklistW)
                     .size();
                 shown++;
             }
-            if (t.subtasks.size() > shown) h += LINE_H; // "+N more"
+            if (t.checklist.size() > shown) h += LINE_H; // "+N more"
             h += BLOCK_GAP;
         }
         return h;
     }
 
     static int maxBlockWidth(List<Task> pinned, FontRenderer fr, PinnedTasksConfig cfg) {
-        int maxSub = cfg.getMaxSubtasksShown();
+        int maxSub = cfg.getMaxChecklistShown();
         int max = 80;
         for (Task t : pinned) {
             max = Math.max(
@@ -227,7 +227,7 @@ public class HudRenderer {
             int titlePrefix = t.iconItem != null ? ICON_SIZE + ICON_GAP : 0;
             max = Math.max(max, titlePrefix + fr.getStringWidth(t.title));
             int shown = 0;
-            for (Subtask st : t.subtasks) {
+            for (ChecklistItem st : t.checklist) {
                 if (shown >= maxSub) break;
                 max = Math.max(max, PADDING + fr.getStringWidth("- " + st.title));
                 shown++;

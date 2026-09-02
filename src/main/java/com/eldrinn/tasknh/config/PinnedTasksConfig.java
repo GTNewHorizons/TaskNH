@@ -64,8 +64,12 @@ public class PinnedTasksConfig {
         @SerializedName("hudVisible")
         boolean hudVisible = true;
 
+        @SerializedName("maxChecklistShown")
+        int maxChecklistShown = 3;
+
+        // Pre-rename key. Read once on load, then dropped: gson skips null fields when writing.
         @SerializedName("maxSubtasksShown")
-        int maxSubtasksShown = 3;
+        Integer legacyMaxSubtasksShown;
 
         @SerializedName("maxPinnedTasks")
         int maxPinnedTasks = 5;
@@ -93,6 +97,11 @@ public class PinnedTasksConfig {
         } catch (IOException e) {
             org.apache.logging.log4j.LogManager.getLogger("tasknh")
                 .warn("Failed to load tasknh_pins.json: {}", e.getMessage());
+        }
+        if (data.hud.legacyMaxSubtasksShown != null) {
+            data.hud.maxChecklistShown = data.hud.legacyMaxSubtasksShown;
+            data.hud.legacyMaxSubtasksShown = null;
+            migrating = true;
         }
         if (migrating) save(); // persist to the new tasknh_pins.json
     }
@@ -216,17 +225,17 @@ public class PinnedTasksConfig {
         data.hud.scale = 1.0;
         data.hud.showBackground = true;
         data.hud.hudVisible = true;
-        data.hud.maxSubtasksShown = 3;
+        data.hud.maxChecklistShown = 3;
         data.hud.maxPinnedTasks = 5;
         save();
     }
 
-    public int getMaxSubtasksShown() {
-        return data.hud.maxSubtasksShown;
+    public int getMaxChecklistShown() {
+        return data.hud.maxChecklistShown;
     }
 
-    public void setMaxSubtasksShown(int value) {
-        data.hud.maxSubtasksShown = Math.max(1, Math.min(10, value));
+    public void setMaxChecklistShown(int value) {
+        data.hud.maxChecklistShown = Math.max(1, Math.min(10, value));
         save();
     }
 

@@ -16,7 +16,7 @@ import com.cleanroommc.modularui.widgets.ToggleButton;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.eldrinn.tasknh.cache.PlayerEntry;
 import com.eldrinn.tasknh.cache.TaskNHClientCache;
-import com.eldrinn.tasknh.data.Subtask;
+import com.eldrinn.tasknh.data.ChecklistItem;
 import com.eldrinn.tasknh.data.Task;
 import com.eldrinn.tasknh.data.TaskLocation;
 import com.eldrinn.tasknh.data.TaskStatus;
@@ -361,10 +361,10 @@ public class TaskDetailWidget extends Flow {
         }
 
         // Checklist
-        var subtasksLabel = new TextWidget<>(t("tasknh.gui.detail.checklist"));
-        subtasksLabel.size(W, 14);
-        formList.child(subtasksLabel);
-        formList.child(buildSubtaskList());
+        var checklistLabel = new TextWidget<>(t("tasknh.gui.detail.checklist"));
+        checklistLabel.size(W, 14);
+        formList.child(checklistLabel);
+        formList.child(buildChecklist());
     }
 
     private Flow buildLocationRow() {
@@ -525,17 +525,17 @@ public class TaskDetailWidget extends Flow {
         return col;
     }
 
-    private Flow buildSubtaskList() {
+    private Flow buildChecklist() {
         final int W = TaskNHGui.LEFT_WIDTH - 2 * TaskNHGui.PADDING - SCROLLBAR_W;
         Flow col = Flow.column();
         col.size(W, ROW_H);
         col.coverChildrenHeight(ROW_H);
 
-        for (Subtask sub : task.subtasks) {
-            col.child(subtaskRow(sub, col));
+        for (ChecklistItem item : task.checklist) {
+            col.child(checklistRow(item, col));
         }
 
-        // Add subtask row
+        // Add checklist row
         String[] newTitle = { "" };
         PlainTextField addField = new PlainTextField();
         addField.size(W - EL_H, EL_H);
@@ -544,13 +544,13 @@ public class TaskDetailWidget extends Flow {
         addField.value(new StringValue.Dynamic(() -> newTitle[0], val -> newTitle[0] = val));
         // The row is inserted in place instead of rebuilding the whole screen, so the list doesn't
         // jump and the field keeps both its focus and the cursor (Enter keeps you typing).
-        Runnable addSubtask = () -> {
+        Runnable addChecklistItem = () -> {
             String title = newTitle[0].trim();
             if (title.isEmpty()) return;
-            Subtask sub = new Subtask(UUID.randomUUID(), title, false);
-            task.subtasks.add(sub);
+            ChecklistItem item = new ChecklistItem(UUID.randomUUID(), title, false);
+            task.checklist.add(item);
             col.addChild(
-                subtaskRow(sub, col),
+                checklistRow(item, col),
                 col.getChildren()
                     .size() - 1);
             col.scheduleResize();
@@ -558,7 +558,7 @@ public class TaskDetailWidget extends Flow {
             addField.clearText();
             sendUpdate();
         };
-        addField.onEnter(addSubtask::run);
+        addField.onEnter(addChecklistItem::run);
         col.child(
             Flow.row()
                 .size(W, ROW_H)
@@ -568,36 +568,36 @@ public class TaskDetailWidget extends Flow {
                         .overlay(ICON_ADD)
                         .onMousePressed(btn -> {
                             if (btn != 0) return false;
-                            addSubtask.run();
+                            addChecklistItem.run();
                             return true;
                         })));
         return col;
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private Flow subtaskRow(Subtask sub, Flow col) {
+    private Flow checklistRow(ChecklistItem item, Flow col) {
         final int W = TaskNHGui.LEFT_WIDTH - 2 * TaskNHGui.PADDING - SCROLLBAR_W;
-        var subtaskTitle = new TextWidget<>(sub.title);
-        subtaskTitle.size(W - EL_H * 2 - 4, EL_H);
-        subtaskTitle.textAlign(Alignment.CenterLeft);
-        subtaskTitle.marginLeft(4);
+        var itemTitle = new TextWidget<>(item.title);
+        itemTitle.size(W - EL_H * 2 - 4, EL_H);
+        itemTitle.textAlign(Alignment.CenterLeft);
+        itemTitle.marginLeft(4);
 
         Flow row = Flow.row()
             .size(W, ROW_H);
         row.child(
             new ToggleButton().size(EL_H, EL_H)
-                .value(new BoolValue.Dynamic(() -> sub.checked, val -> {
-                    sub.checked = val;
+                .value(new BoolValue.Dynamic(() -> item.checked, val -> {
+                    item.checked = val;
                     sendUpdate();
                 }))
                 .overlay(true, GuiTextures.CHECKMARK));
-        row.child(subtaskTitle);
+        row.child(itemTitle);
         row.child(
             new ButtonWidget<>().size(EL_H, EL_H)
                 .overlay(ICON_REMOVE)
                 .onMousePressed(btn -> {
                     if (btn != 0) return false;
-                    task.subtasks.remove(sub);
+                    task.checklist.remove(item);
                     col.remove(row);
                     col.scheduleResize();
                     sendUpdate();

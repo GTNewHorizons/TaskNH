@@ -29,7 +29,7 @@ public class Task {
     /** Parent task id, or null for a root task. Only one nesting level is allowed. */
     @Nullable
     public UUID parentId;
-    public final List<Subtask> subtasks;
+    public final List<ChecklistItem> checklist;
     public final List<Comment> comments; // soft limit enforced on add: max 50
 
     public Task(UUID id, String title, String description, TaskStatus status) {
@@ -39,7 +39,7 @@ public class Task {
         this.status = status;
         this.assignees = new ArrayList<>();
         this.location = null;
-        this.subtasks = new ArrayList<>();
+        this.checklist = new ArrayList<>();
         this.comments = new ArrayList<>();
     }
 
@@ -66,9 +66,9 @@ public class Task {
             tag.setLong("parentLeast", parentId.getLeastSignificantBits());
         }
 
-        NBTTagList subtaskList = new NBTTagList();
-        for (Subtask s : subtasks) subtaskList.appendTag(s.toNBT());
-        tag.setTag("subtasks", subtaskList);
+        NBTTagList checklistList = new NBTTagList();
+        for (ChecklistItem c : checklist) checklistList.appendTag(c.toNBT());
+        tag.setTag("checklist", checklistList);
 
         NBTTagList commentList = new NBTTagList();
         for (Comment c : comments) commentList.appendTag(c.toNBT());
@@ -100,9 +100,11 @@ public class Task {
             task.parentId = new UUID(tag.getLong("parentMost"), tag.getLong("parentLeast"));
         }
 
-        NBTTagList subtaskList = tag.getTagList("subtasks", Constants.NBT.TAG_COMPOUND);
-        for (int i = 0; i < subtaskList.tagCount(); i++) {
-            task.subtasks.add(Subtask.fromNBT(subtaskList.getCompoundTagAt(i)));
+        // "subtasks" is the pre-rename tag, kept so worlds saved before the rename still load.
+        String checklistTag = tag.hasKey("checklist") ? "checklist" : "subtasks";
+        NBTTagList checklistList = tag.getTagList(checklistTag, Constants.NBT.TAG_COMPOUND);
+        for (int i = 0; i < checklistList.tagCount(); i++) {
+            task.checklist.add(ChecklistItem.fromNBT(checklistList.getCompoundTagAt(i)));
         }
 
         NBTTagList commentList = tag.getTagList("comments", Constants.NBT.TAG_COMPOUND);
@@ -135,8 +137,8 @@ public class Task {
             buf.writeLong(parentId.getLeastSignificantBits());
         }
 
-        buf.writeInt(subtasks.size());
-        for (Subtask s : subtasks) s.writeToBuf(buf);
+        buf.writeInt(checklist.size());
+        for (ChecklistItem c : checklist) c.writeToBuf(buf);
 
         buf.writeInt(comments.size());
         for (Comment c : comments) c.writeToBuf(buf);
@@ -172,10 +174,11 @@ public class Task {
             task.parentId = new UUID(buf.readLong(), buf.readLong());
         }
 
-        int subtaskCount = buf.readInt();
-        if (subtaskCount < 0 || subtaskCount > 200) throw new IOException("Invalid subtask count: " + subtaskCount);
-        for (int i = 0; i < subtaskCount; i++) {
-            task.subtasks.add(Subtask.readFromBuf(buf));
+        int checklistCount = buf.readInt();
+        if (checklistCount < 0 || checklistCount > 200)
+            throw new IOException("Invalid checklist count: " + checklistCount);
+        for (int i = 0; i < checklistCount; i++) {
+            task.checklist.add(ChecklistItem.readFromBuf(buf));
         }
 
         int commentCount = buf.readInt();

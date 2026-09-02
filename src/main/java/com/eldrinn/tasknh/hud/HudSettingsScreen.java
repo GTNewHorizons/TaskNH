@@ -97,18 +97,18 @@ public class HudSettingsScreen extends GuiScreen {
         fontRendererObj.drawStringWithShadow("+", cx + 3, py + 7, ColorUtils.TEXT_WHITE.getColor());
         cx += 20;
 
-        // Subtasks
-        String subtasksKey = StatCollector.translateToLocal("tasknh.hud.settings.checklist");
-        fontRendererObj.drawStringWithShadow(subtasksKey, cx, py + 7, ColorUtils.TEXT_GRAY.getColor());
-        cx += fontRendererObj.getStringWidth(subtasksKey) + 4;
+        // Checklist
+        String checklistKey = StatCollector.translateToLocal("tasknh.hud.settings.checklist");
+        fontRendererObj.drawStringWithShadow(checklistKey, cx, py + 7, ColorUtils.TEXT_GRAY.getColor());
+        cx += fontRendererObj.getStringWidth(checklistKey) + 4;
 
         drawRect(cx, py + 2, cx + 14, py + 22, ColorUtils.BG_BUTTON.getColor());
         fontRendererObj.drawStringWithShadow("-", cx + 4, py + 7, ColorUtils.TEXT_WHITE.getColor());
         cx += 16;
 
-        String subtasksLabel = String.valueOf(cfg.getMaxSubtasksShown());
-        fontRendererObj.drawStringWithShadow(subtasksLabel, cx, py + 7, ColorUtils.TEXT_WHITE.getColor());
-        cx += fontRendererObj.getStringWidth(subtasksLabel) + 4;
+        String checklistLabel = String.valueOf(cfg.getMaxChecklistShown());
+        fontRendererObj.drawStringWithShadow(checklistLabel, cx, py + 7, ColorUtils.TEXT_WHITE.getColor());
+        cx += fontRendererObj.getStringWidth(checklistLabel) + 4;
 
         drawRect(cx, py + 2, cx + 14, py + 22, ColorUtils.BG_BUTTON.getColor());
         fontRendererObj.drawStringWithShadow("+", cx + 3, py + 7, ColorUtils.TEXT_WHITE.getColor());
@@ -221,17 +221,17 @@ public class HudSettingsScreen extends GuiScreen {
         }
         cx += 20;
 
-        // Subtasks
+        // Checklist
         cx += fontRendererObj.getStringWidth(StatCollector.translateToLocal("tasknh.hud.settings.checklist")) + 4;
         if (mouseX >= cx && mouseX <= cx + 14) {
-            cfg.setMaxSubtasksShown(cfg.getMaxSubtasksShown() - 1);
+            cfg.setMaxChecklistShown(cfg.getMaxChecklistShown() - 1);
             return;
         }
         cx += 16;
-        String subtasksLabel = String.valueOf(cfg.getMaxSubtasksShown());
-        cx += fontRendererObj.getStringWidth(subtasksLabel) + 4;
+        String checklistLabel = String.valueOf(cfg.getMaxChecklistShown());
+        cx += fontRendererObj.getStringWidth(checklistLabel) + 4;
         if (mouseX >= cx && mouseX <= cx + 14) {
-            cfg.setMaxSubtasksShown(cfg.getMaxSubtasksShown() + 1);
+            cfg.setMaxChecklistShown(cfg.getMaxChecklistShown() + 1);
             return;
         }
         cx += 20;
