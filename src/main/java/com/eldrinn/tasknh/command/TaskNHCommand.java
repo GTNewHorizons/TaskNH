@@ -272,6 +272,7 @@ public class TaskNHCommand extends CommandBase {
                     obj.addProperty("description", t.description);
                     obj.addProperty("status", t.status.name());
                     if (t.iconItem != null) obj.addProperty("iconItem", t.iconItem);
+                    if (t.trackItem != null) obj.addProperty("trackItem", t.trackItem);
                     obj.addProperty("showOnMap", t.showOnMap);
                     if (t.location != null) {
                         JsonObject loc = new JsonObject();
@@ -378,6 +379,8 @@ public class TaskNHCommand extends CommandBase {
                                 obj.get("status")
                                     .getAsString()));
                         if (obj.has("iconItem")) t.iconItem = obj.get("iconItem")
+                            .getAsString();
+                        if (obj.has("trackItem")) t.trackItem = obj.get("trackItem")
                             .getAsString();
                         if (obj.has("showOnMap")) t.showOnMap = obj.get("showOnMap")
                             .getAsBoolean();
