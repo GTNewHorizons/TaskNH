@@ -8,9 +8,7 @@ import com.cleanroommc.modularui.drawable.GuiTextures;
 import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.value.BoolValue;
 import com.cleanroommc.modularui.value.StringValue;
-import com.cleanroommc.modularui.widget.scroll.VerticalScrollData;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
-import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.TextWidget;
 import com.cleanroommc.modularui.widgets.ToggleButton;
 import com.cleanroommc.modularui.widgets.layout.Flow;
@@ -91,8 +89,7 @@ public class TaskListWidget extends Flow {
         child(searchRow);
 
         // Task list filtered by active tab and search query
-        ListWidget list = new ListWidget();
-        list.scrollDirection(new VerticalScrollData(false, TaskRowWidget.SCROLLBAR_W));
+        ScrollMemoryList list = new ScrollMemoryList(data.listScroll, TaskRowWidget.SCROLLBAR_W);
         list.size(W, H - 24 - P - 20 - P - 28);
         list.marginTop(P);
         String query = data.searchQuery.toLowerCase();
