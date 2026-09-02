@@ -25,6 +25,17 @@ public class TaskNHNetwork {
     }
 
     /**
+     * Sends a task edit the server answers with a {@link SyncAllTasksPacket}. The GUI skips its
+     * rebuild for that echo, so an open form keeps its focus and layout.
+     */
+    @cpw.mods.fml.relauncher.SideOnly(cpw.mods.fml.relauncher.Side.CLIENT)
+    public static void sendEditToServer(com.eldrinn.tasknh.data.Task task, IPacket packet) {
+        com.eldrinn.tasknh.gui.TaskNHGui.expectSelfSync();
+        com.eldrinn.tasknh.cache.TaskNHClientCache.setPendingEdit(task);
+        CHANNEL.sendToServer(packet);
+    }
+
+    /**
      * Sends a packet to all online members of the given team.
      * Members who are offline are skipped silently.
      */
