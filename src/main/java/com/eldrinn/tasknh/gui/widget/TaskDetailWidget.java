@@ -105,7 +105,8 @@ public class TaskDetailWidget extends Flow {
                 .onMousePressed(btn -> {
                     if (btn != 0) return false;
                     data.clear();
-                    data.pageController.setPage(0);
+                    // Rebuild so the list shows the edits made in the form.
+                    TaskNHGui.open(data);
                     return true;
                 }));
 
@@ -143,6 +144,8 @@ public class TaskDetailWidget extends Flow {
                     .overlay(ICON_REMOVE)
                     .onMousePressed(btn -> {
                         if (btn != 0) return false;
+                        // Drop the pending edit, otherwise it would put the deleted task back.
+                        TaskNHClientCache.setPendingEdit(null);
                         TaskNHNetwork.CHANNEL.sendToServer(new DeleteTaskPacket(task.id));
                         data.clear();
                         TaskNHGui.open(data);
@@ -239,7 +242,8 @@ public class TaskDetailWidget extends Flow {
                         if (selected) {
                             task.status = status;
                             sendUpdate();
-                            TaskNHGui.open(data);
+                            // No rebuild here: the buttons repaint themselves and the list is
+                            // rebuilt when the back button returns to it.
                         }
                     }))
                     .child(false, normalLabel)
@@ -530,34 +534,7 @@ public class TaskDetailWidget extends Flow {
         col.coverChildrenHeight(ROW_H);
 
         for (Subtask sub : task.subtasks) {
-            var subtaskTitle = new TextWidget<>(sub.title);
-            subtaskTitle.size(W - EL_H * 2 - 4, EL_H);
-            subtaskTitle.textAlign(Alignment.CenterLeft);
-            subtaskTitle.marginLeft(4);
-            ButtonWidget<?> checkBtn = new ButtonWidget<>();
-            checkBtn.size(EL_H, EL_H);
-            if (sub.checked) checkBtn.overlay(GuiTextures.CHECKMARK);
-            col.child(
-                Flow.row()
-                    .size(W, ROW_H)
-                    .child(checkBtn.onMousePressed(btn -> {
-                        if (btn != 0) return false;
-                        sub.checked = !sub.checked;
-                        sendUpdate();
-                        TaskNHGui.open(data);
-                        return true;
-                    }))
-                    .child(subtaskTitle)
-                    .child(
-                        new ButtonWidget<>().size(EL_H, EL_H)
-                            .overlay(ICON_REMOVE)
-                            .onMousePressed(btn -> {
-                                if (btn != 0) return false;
-                                task.subtasks.remove(sub);
-                                sendUpdate();
-                                TaskNHGui.open(data);
-                                return true;
-                            })));
+            col.child(subtaskRow(sub, col));
         }
 
         // Add subtask row
@@ -567,29 +544,23 @@ public class TaskDetailWidget extends Flow {
         addField.setTextColor(ColorUtils.TEXT_WHITE.getColor());
         addField.autoUpdateOnChange(true);
         addField.value(new StringValue.Dynamic(() -> newTitle[0], val -> newTitle[0] = val));
-        // Re-focus the add field after a rebuild triggered by Enter, so the user can keep typing.
-        if (data.focusSubtaskAdd) {
-            addField.setFocusOnGuiOpen(true);
-            data.focusSubtaskAdd = false;
-        }
-        // refocus=true: skip our own rebuild and let the server sync rebuild once, then refocus the
-        // field, so a second rebuild doesn't steal the cursor (Enter keeps you typing subtasks).
-        java.util.function.Consumer<Boolean> addSubtask = refocus -> {
+        // The row is inserted in place instead of rebuilding the whole screen, so the list doesn't
+        // jump and the field keeps both its focus and the cursor (Enter keeps you typing).
+        Runnable addSubtask = () -> {
             String title = newTitle[0].trim();
             if (title.isEmpty()) return;
-            task.subtasks.add(new Subtask(UUID.randomUUID(), title, false));
+            Subtask sub = new Subtask(UUID.randomUUID(), title, false);
+            task.subtasks.add(sub);
+            col.addChild(
+                subtaskRow(sub, col),
+                col.getChildren()
+                    .size() - 1);
+            col.scheduleResize();
             newTitle[0] = "";
-            if (refocus) {
-                data.focusSubtaskAdd = true;
-                sendUpdate();
-                // No packet (and thus no sync rebuild) goes out for an unsaved new task, so rebuild locally.
-                if (isNew && !created) TaskNHGui.open(data);
-            } else {
-                sendUpdate();
-                TaskNHGui.open(data);
-            }
+            addField.clearText();
+            sendUpdate();
         };
-        addField.onEnter(() -> addSubtask.accept(true));
+        addField.onEnter(addSubtask::run);
         col.child(
             Flow.row()
                 .size(W, ROW_H)
@@ -599,10 +570,42 @@ public class TaskDetailWidget extends Flow {
                         .overlay(ICON_ADD)
                         .onMousePressed(btn -> {
                             if (btn != 0) return false;
-                            addSubtask.accept(false);
+                            addSubtask.run();
                             return true;
                         })));
         return col;
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private Flow subtaskRow(Subtask sub, Flow col) {
+        final int W = TaskNHGui.LEFT_WIDTH - 2 * TaskNHGui.PADDING - SCROLLBAR_W;
+        var subtaskTitle = new TextWidget<>(sub.title);
+        subtaskTitle.size(W - EL_H * 2 - 4, EL_H);
+        subtaskTitle.textAlign(Alignment.CenterLeft);
+        subtaskTitle.marginLeft(4);
+
+        Flow row = Flow.row()
+            .size(W, ROW_H);
+        row.child(
+            new ToggleButton().size(EL_H, EL_H)
+                .value(new BoolValue.Dynamic(() -> sub.checked, val -> {
+                    sub.checked = val;
+                    sendUpdate();
+                }))
+                .overlay(true, GuiTextures.CHECKMARK));
+        row.child(subtaskTitle);
+        row.child(
+            new ButtonWidget<>().size(EL_H, EL_H)
+                .overlay(ICON_REMOVE)
+                .onMousePressed(btn -> {
+                    if (btn != 0) return false;
+                    task.subtasks.remove(sub);
+                    col.remove(row);
+                    col.scheduleResize();
+                    sendUpdate();
+                    return true;
+                }));
+        return row;
     }
 
     private TaskLocation ensureLocation() {
@@ -620,15 +623,15 @@ public class TaskDetailWidget extends Flow {
         if (isNew) {
             if (!task.title.isEmpty()) {
                 if (!created) {
-                    TaskNHNetwork.CHANNEL.sendToServer(new CreateTaskPacket(task));
+                    TaskNHNetwork.sendEditToServer(task, new CreateTaskPacket(task));
                     data.selectTask(task.id);
                     created = true;
                 } else {
-                    TaskNHNetwork.CHANNEL.sendToServer(new UpdateTaskPacket(task));
+                    TaskNHNetwork.sendEditToServer(task, new UpdateTaskPacket(task));
                 }
             }
         } else {
-            TaskNHNetwork.CHANNEL.sendToServer(new UpdateTaskPacket(task));
+            TaskNHNetwork.sendEditToServer(task, new UpdateTaskPacket(task));
         }
     }
 }

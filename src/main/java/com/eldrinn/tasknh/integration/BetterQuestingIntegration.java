@@ -62,7 +62,7 @@ public final class BetterQuestingIntegration {
             }
         }
 
-        TaskNHNetwork.CHANNEL.sendToServer(new CreateTaskPacket(task));
+        TaskNHNetwork.sendEditToServer(task, new CreateTaskPacket(task));
 
         Minecraft.getMinecraft().thePlayer
             .addChatMessage(new ChatComponentText("§aTaskNH: task \"" + title + "\" created."));

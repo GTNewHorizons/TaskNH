@@ -20,6 +20,11 @@ public class PlainTextField extends TextFieldWidget {
         return this;
     }
 
+    /** Empties the field and moves the cursor with it, unlike setText, which leaves it out of bounds. */
+    public void clearText() {
+        this.handler.clear();
+    }
+
     @Override
     public @org.jetbrains.annotations.NotNull Interactable.Result onMousePressed(int mouseButton) {
         if (mouseButton == 1) {
