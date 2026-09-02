@@ -35,9 +35,13 @@ public class IconSlotWidget extends Widget<IconSlotWidget>
     }
 
     public IconSlotWidget(ItemHolder iconHolder, Runnable onChanged) {
+        this(iconHolder, onChanged, "tasknh.gui.detail.icon_hint");
+    }
+
+    public IconSlotWidget(ItemHolder iconHolder, Runnable onChanged, String tooltipKey) {
         this.iconHolder = iconHolder;
         this.onChanged = onChanged;
-        tooltip().addLine(net.minecraft.util.StatCollector.translateToLocal("tasknh.gui.detail.icon_hint"));
+        tooltip().addLine(net.minecraft.util.StatCollector.translateToLocal(tooltipKey));
     }
 
     @Override
