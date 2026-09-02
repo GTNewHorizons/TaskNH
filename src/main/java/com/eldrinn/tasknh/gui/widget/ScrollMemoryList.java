@@ -36,6 +36,9 @@ public class ScrollMemoryList extends ListWidget<IWidget, ScrollMemoryList> {
 
     public ScrollMemoryList(Memory memory, int scrollbarWidth) {
         this.memory = memory;
+        // Rows are narrower than the list by the scrollbar width. Centering, the default, would
+        // split that gap and move the whole list sideways whenever the scrollbar turns on or off.
+        crossAxisAlignment(com.cleanroommc.modularui.utils.Alignment.CrossAxis.START);
         scrollDirection(new VerticalScrollData(false, scrollbarWidth));
         getScrollData().setScrollSize(memory.size);
     }

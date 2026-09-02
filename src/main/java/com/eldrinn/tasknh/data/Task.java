@@ -26,7 +26,10 @@ public class Task {
     @Nullable
     public String trackItem; // same format as iconItem; task auto-completes once seen in a member's inventory
     public boolean showOnMap = false;
-    public final List<Subtask> subtasks;
+    /** Parent task id, or null for a root task. Only one nesting level is allowed. */
+    @Nullable
+    public UUID parentId;
+    public final List<ChecklistItem> checklist;
     public final List<Comment> comments; // soft limit enforced on add: max 50
 
     public Task(UUID id, String title, String description, TaskStatus status) {
@@ -36,7 +39,7 @@ public class Task {
         this.status = status;
         this.assignees = new ArrayList<>();
         this.location = null;
-        this.subtasks = new ArrayList<>();
+        this.checklist = new ArrayList<>();
         this.comments = new ArrayList<>();
     }
 
@@ -58,10 +61,14 @@ public class Task {
         if (iconItem != null) tag.setString("iconItem", iconItem);
         if (trackItem != null) tag.setString("trackItem", trackItem);
         tag.setBoolean("showOnMap", showOnMap);
+        if (parentId != null) {
+            tag.setLong("parentMost", parentId.getMostSignificantBits());
+            tag.setLong("parentLeast", parentId.getLeastSignificantBits());
+        }
 
-        NBTTagList subtaskList = new NBTTagList();
-        for (Subtask s : subtasks) subtaskList.appendTag(s.toNBT());
-        tag.setTag("subtasks", subtaskList);
+        NBTTagList checklistList = new NBTTagList();
+        for (ChecklistItem c : checklist) checklistList.appendTag(c.toNBT());
+        tag.setTag("checklist", checklistList);
 
         NBTTagList commentList = new NBTTagList();
         for (Comment c : comments) commentList.appendTag(c.toNBT());
@@ -89,10 +96,15 @@ public class Task {
         if (tag.hasKey("iconItem")) task.iconItem = tag.getString("iconItem");
         if (tag.hasKey("trackItem")) task.trackItem = tag.getString("trackItem");
         task.showOnMap = tag.getBoolean("showOnMap");
+        if (tag.hasKey("parentMost")) {
+            task.parentId = new UUID(tag.getLong("parentMost"), tag.getLong("parentLeast"));
+        }
 
-        NBTTagList subtaskList = tag.getTagList("subtasks", Constants.NBT.TAG_COMPOUND);
-        for (int i = 0; i < subtaskList.tagCount(); i++) {
-            task.subtasks.add(Subtask.fromNBT(subtaskList.getCompoundTagAt(i)));
+        // "subtasks" is the pre-rename tag, kept so worlds saved before the rename still load.
+        String checklistTag = tag.hasKey("checklist") ? "checklist" : "subtasks";
+        NBTTagList checklistList = tag.getTagList(checklistTag, Constants.NBT.TAG_COMPOUND);
+        for (int i = 0; i < checklistList.tagCount(); i++) {
+            task.checklist.add(ChecklistItem.fromNBT(checklistList.getCompoundTagAt(i)));
         }
 
         NBTTagList commentList = tag.getTagList("comments", Constants.NBT.TAG_COMPOUND);
@@ -119,9 +131,14 @@ public class Task {
         buf.writeStringToBuffer(iconItem != null ? iconItem : "");
         buf.writeStringToBuffer(trackItem != null ? trackItem : "");
         buf.writeBoolean(showOnMap);
+        buf.writeBoolean(parentId != null);
+        if (parentId != null) {
+            buf.writeLong(parentId.getMostSignificantBits());
+            buf.writeLong(parentId.getLeastSignificantBits());
+        }
 
-        buf.writeInt(subtasks.size());
-        for (Subtask s : subtasks) s.writeToBuf(buf);
+        buf.writeInt(checklist.size());
+        for (ChecklistItem c : checklist) c.writeToBuf(buf);
 
         buf.writeInt(comments.size());
         for (Comment c : comments) c.writeToBuf(buf);
@@ -153,11 +170,15 @@ public class Task {
         String track = buf.readStringFromBuffer(256);
         task.trackItem = track.isEmpty() ? null : track;
         task.showOnMap = buf.readBoolean();
+        if (buf.readBoolean()) {
+            task.parentId = new UUID(buf.readLong(), buf.readLong());
+        }
 
-        int subtaskCount = buf.readInt();
-        if (subtaskCount < 0 || subtaskCount > 200) throw new IOException("Invalid subtask count: " + subtaskCount);
-        for (int i = 0; i < subtaskCount; i++) {
-            task.subtasks.add(Subtask.readFromBuf(buf));
+        int checklistCount = buf.readInt();
+        if (checklistCount < 0 || checklistCount > 200)
+            throw new IOException("Invalid checklist count: " + checklistCount);
+        for (int i = 0; i < checklistCount; i++) {
+            task.checklist.add(ChecklistItem.readFromBuf(buf));
         }
 
         int commentCount = buf.readInt();

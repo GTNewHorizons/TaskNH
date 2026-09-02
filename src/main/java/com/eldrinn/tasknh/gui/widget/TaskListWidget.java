@@ -94,13 +94,20 @@ public class TaskListWidget extends Flow {
         list.marginTop(P);
         String query = data.searchQuery.toLowerCase();
         for (Task task : allTasks) {
-            if (task.status != data.activeTab) continue;
-            if (!query.isEmpty() && !task.title.toLowerCase()
-                .contains(query)
-                && !task.description.toLowerCase()
-                    .contains(query))
-                continue;
-            list.child(new TaskRowWidget(task, data));
+            if (!matches(task, data, query)) continue;
+            if (task.parentId == null) {
+                list.child(new TaskRowWidget(task, data, false));
+                // Children follow their parent, indented. Nesting is one level deep.
+                for (Task child : allTasks) {
+                    // A subtask stays under its parent whatever its status; only search filters it.
+                    if (task.id.equals(child.parentId) && matchesQuery(child, query)) {
+                        list.child(new TaskRowWidget(child, data, true));
+                    }
+                }
+            } else if (TaskNHClientCache.get(task.parentId) == null) {
+                // Orphaned subtask (parent gone) would otherwise vanish, so show it as a root.
+                list.child(new TaskRowWidget(task, data, false));
+            }
         }
         child(list);
 
@@ -146,9 +153,21 @@ public class TaskListWidget extends Flow {
                         })));
     }
 
+    private static boolean matches(Task task, TaskNHGuiData data, String query) {
+        return task.status == data.activeTab && matchesQuery(task, query);
+    }
+
+    private static boolean matchesQuery(Task task, String query) {
+        if (query.isEmpty()) return true;
+        return task.title.toLowerCase()
+            .contains(query)
+            || task.description.toLowerCase()
+                .contains(query);
+    }
+
     private static String tabLabel(String key, TaskStatus status, Collection<Task> tasks) {
         long count = tasks.stream()
-            .filter(t -> t.status == status)
+            .filter(t -> t.status == status && t.parentId == null)
             .count();
         return StatCollector.translateToLocal(key) + " (" + count + ")";
     }

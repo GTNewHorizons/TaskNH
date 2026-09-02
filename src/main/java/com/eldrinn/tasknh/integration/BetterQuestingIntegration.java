@@ -7,7 +7,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ChatComponentText;
 
-import com.eldrinn.tasknh.data.Subtask;
+import com.eldrinn.tasknh.data.ChecklistItem;
 import com.eldrinn.tasknh.data.Task;
 import com.eldrinn.tasknh.data.TaskStatus;
 import com.eldrinn.tasknh.network.CreateTaskPacket;
@@ -50,14 +50,15 @@ public final class BetterQuestingIntegration {
         Task task = new Task(UUID.randomUUID(), title, "", TaskStatus.OPEN);
         task.iconItem = toIconString(quest.getProperty(NativeProps.ICON));
 
-        // Map TaskRetrieval required items to subtasks
+        // Map TaskRetrieval required items to checklist items
         for (DBEntry<ITask> entry : quest.getTasks()
             .getEntries()) {
             if (entry.getValue() instanceof TaskRetrieval retrieval) {
                 for (BigItemStack required : retrieval.requiredItems) {
                     String itemName = required.getBaseStack()
                         .getDisplayName();
-                    task.subtasks.add(new Subtask(UUID.randomUUID(), required.stackSize + "x " + itemName, false));
+                    task.checklist
+                        .add(new ChecklistItem(UUID.randomUUID(), required.stackSize + "x " + itemName, false));
                 }
             }
         }

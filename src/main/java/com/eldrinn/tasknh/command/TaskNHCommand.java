@@ -283,14 +283,14 @@ public class TaskNHCommand extends CommandBase {
                         loc.addProperty("label", t.location.label);
                         obj.add("location", loc);
                     }
-                    JsonArray subtasks = new JsonArray();
-                    for (com.eldrinn.tasknh.data.Subtask s : t.subtasks) {
+                    JsonArray checklist = new JsonArray();
+                    for (com.eldrinn.tasknh.data.ChecklistItem s : t.checklist) {
                         JsonObject so = new JsonObject();
                         so.addProperty("title", s.title);
                         so.addProperty("checked", s.checked);
-                        subtasks.add(so);
+                        checklist.add(so);
                     }
-                    obj.add("subtasks", subtasks);
+                    obj.add("checklist", checklist);
                     arr.add(obj);
                 }
                 File dir = new File(
@@ -398,11 +398,13 @@ public class TaskNHCommand extends CommandBase {
                                 loc.has("label") ? loc.get("label")
                                     .getAsString() : "");
                         }
-                        if (obj.has("subtasks")) {
-                            for (JsonElement se : obj.getAsJsonArray("subtasks")) {
+                        // "subtasks" is the pre-rename key, still accepted on import.
+                        String checklistKey = obj.has("checklist") ? "checklist" : "subtasks";
+                        if (obj.has(checklistKey)) {
+                            for (JsonElement se : obj.getAsJsonArray(checklistKey)) {
                                 JsonObject so = se.getAsJsonObject();
-                                t.subtasks.add(
-                                    new com.eldrinn.tasknh.data.Subtask(
+                                t.checklist.add(
+                                    new com.eldrinn.tasknh.data.ChecklistItem(
                                         UUID.randomUUID(),
                                         so.get("title")
                                             .getAsString(),

@@ -40,11 +40,21 @@ public class TaskRowWidget extends Flow {
     private static final int ROW_WIDTH = LEFT_WIDTH - 2 * TaskNHGui.PADDING - SCROLLBAR_W;
     private static final int ICON_W = 20;
     private static final int PIN_BTN_W = 20;
-    private static final int SELECT_BTN_W = ROW_WIDTH - PIN_BTN_W;
+    /** Left offset of a child task row, so nesting is visible in the flat list. */
+    private static final int INDENT_W = 16;
 
-    public TaskRowWidget(Task task, TaskNHGuiData data) {
+    public TaskRowWidget(Task task, TaskNHGuiData data, boolean isChild) {
         super(com.cleanroommc.modularui.api.GuiAxis.X);
+        final int indent = isChild ? INDENT_W : 0;
         size(ROW_WIDTH, 20);
+        // Subtasks can't be pinned: the parent covers that, so the freed width goes to the title.
+        final int SELECT_BTN_W = isChild ? ROW_WIDTH - indent : ROW_WIDTH - PIN_BTN_W;
+        // Spacer instead of a margin: the list layout ignores the margin and would shift the pin button.
+        if (indent > 0) {
+            var spacer = new TextWidget<>("");
+            spacer.size(indent, 20);
+            child(spacer);
+        }
 
         ToggleButton selectBtn = new ToggleButton();
         selectBtn.size(SELECT_BTN_W, 20);
@@ -54,8 +64,11 @@ public class TaskRowWidget extends Flow {
                 TaskNHGui.open(data);
             }
         }));
-        selectBtn.child(false, buildRowContent(task));
-        selectBtn.child(true, buildRowContent(task));
+        selectBtn.child(false, buildRowContent(task, SELECT_BTN_W));
+        selectBtn.child(true, buildRowContent(task, SELECT_BTN_W));
+
+        child(selectBtn);
+        if (isChild) return;
 
         boolean pinned = TaskNHClientCache.isPinned(task.id);
         boolean canPin = TaskNHClientCache.canPin();
@@ -81,7 +94,6 @@ public class TaskRowWidget extends Flow {
             return true;
         });
 
-        child(selectBtn);
         child(pinBtn);
     }
 
@@ -89,7 +101,7 @@ public class TaskRowWidget extends Flow {
     private static final int HEAD_SIZE = 8;
     private static final int HEAD_GAP = 2;
 
-    private static Flow buildRowContent(Task task) {
+    private static Flow buildRowContent(Task task, int SELECT_BTN_W) {
         ItemStack stack = IconSlotWidget.parseIconItem(task.iconItem);
         Flow row = Flow.row()
             .size(SELECT_BTN_W, 20);
@@ -100,7 +112,11 @@ public class TaskRowWidget extends Flow {
             used += ICON_W;
         }
 
+        // A done subtask is struck through in place instead of moving to the Done tab.
         String title = truncate(task.title);
+        if (task.parentId != null && task.status == com.eldrinn.tasknh.data.TaskStatus.DONE) {
+            title = net.minecraft.util.EnumChatFormatting.STRIKETHROUGH + title;
+        }
         int leftPad = stack == null ? TEXT_PAD : 0;
         int assigneeW = assigneeBlockWidth(task);
         int maxTitleW = SELECT_BTN_W - used - leftPad - assigneeW;

@@ -31,7 +31,18 @@ public class TaskNHNetwork {
     @cpw.mods.fml.relauncher.SideOnly(cpw.mods.fml.relauncher.Side.CLIENT)
     public static void sendEditToServer(com.eldrinn.tasknh.data.Task task, IPacket packet) {
         com.eldrinn.tasknh.gui.TaskNHGui.expectSelfSync();
-        com.eldrinn.tasknh.cache.TaskNHClientCache.setPendingEdit(task);
+        com.eldrinn.tasknh.cache.TaskNHClientCache.putLocal(task);
+        CHANNEL.sendToServer(packet);
+    }
+
+    /**
+     * Sends a task deletion, which the server also answers with a {@link SyncAllTasksPacket}. The
+     * pending edit is dropped, otherwise it would put the deleted task back into the cache.
+     */
+    @cpw.mods.fml.relauncher.SideOnly(cpw.mods.fml.relauncher.Side.CLIENT)
+    public static void sendDeleteToServer(java.util.UUID taskId, IPacket packet) {
+        com.eldrinn.tasknh.gui.TaskNHGui.expectSelfSync();
+        com.eldrinn.tasknh.cache.TaskNHClientCache.removeLocal(taskId);
         CHANNEL.sendToServer(packet);
     }
 
