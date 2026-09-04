@@ -89,16 +89,18 @@ The window has two pages. Click a task row to open its detail page; use the back
 
 **Page 2 - task detail**
 - **Icon slot** (top-left): drag any item from NEI onto the slot to set it as the task icon; right-click to clear
-- **Title field**: editable inline
+- **Title field**: editable inline, up to 256 characters
 - **Delete button** (top-right): permanently deletes the task for the whole team
 - **Pin button** (top-right): pins the task to the HUD, up to 5 at a time; subtasks cannot be pinned
-- **Description**: free-text field
+- **Description**: free-text field, up to 512 characters
 - **Status**: toggle between To do / Doing / Done
 - **Assignees**: click any online player to assign or unassign them
 - **Location**: X/Y/Z coordinate fields; `Pos` button captures your current position; `Show on map` toggle controls the Navigator marker
 - **Auto-complete on item**: drag an item from NEI onto the slot; the task completes once that item is in a team member's inventory
 - **Subtasks**: child tasks of this task; click one to open it, use `Parent:` at the top of a subtask to go back. A subtask has no subtasks of its own
 - **Checklist**: check off items or remove them; add new ones with the `+` button
+
+The search bar, the subtask and checklist add fields and the X/Y/Z fields hold up to 256 characters each.
 
 ## HUD
 

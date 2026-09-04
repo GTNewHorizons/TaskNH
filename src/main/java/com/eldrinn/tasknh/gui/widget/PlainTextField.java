@@ -12,7 +12,14 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public class PlainTextField extends TextFieldWidget {
 
+    /** Matches the shortest string cap the task packets read back, so no field can build an unsendable packet. */
+    public static final int DEFAULT_MAX_LENGTH = 256;
+
     private Runnable onEnter;
+
+    public PlainTextField() {
+        setMaxLength(DEFAULT_MAX_LENGTH);
+    }
 
     /** Fires when Enter is pressed while the field is focused. */
     public PlainTextField onEnter(Runnable onEnter) {

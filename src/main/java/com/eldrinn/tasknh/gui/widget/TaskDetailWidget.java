@@ -207,6 +207,7 @@ public class TaskDetailWidget extends Flow {
         formList.child(descLabel);
         PlainTextField descField = new PlainTextField();
         descField.size(W, EL_H);
+        descField.setMaxLength(512); // the description is the one field that gets more room than the default
         descField.setTextColor(ColorUtils.TEXT_WHITE.getColor());
         descField.value(new StringValue.Dynamic(() -> task.description, val -> {
             task.description = val;
