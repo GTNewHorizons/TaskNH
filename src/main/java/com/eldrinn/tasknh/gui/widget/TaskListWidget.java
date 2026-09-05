@@ -78,7 +78,7 @@ public class TaskListWidget extends Flow {
         if (data.searchExpanded) {
             PlainTextField searchField = new PlainTextField();
             searchField.size(W - SEARCH_BTN_W, 20);
-            searchField.setTextColor(ColorUtils.TEXT_WHITE.getColor());
+            searchField.setTextColor(ColorUtils.textWhite.getColor());
             searchField.autoUpdateOnChange(true);
             searchField.value(new StringValue.Dynamic(() -> data.searchQuery, val -> {
                 data.searchQuery = val;

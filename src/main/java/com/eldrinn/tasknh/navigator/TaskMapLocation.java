@@ -70,9 +70,9 @@ public class TaskMapLocation implements IWaypointAndLocationProvider {
 
     public int getColor() {
         return switch (status) {
-            case OPEN -> ColorUtils.MAP_WAYPOINT_OPEN.getColor();
-            case IN_PROGRESS -> ColorUtils.MAP_WAYPOINT_IN_PROGRESS.getColor();
-            case DONE -> ColorUtils.MAP_WAYPOINT_DONE.getColor();
+            case OPEN -> ColorUtils.mapWaypointOpen.getColor();
+            case IN_PROGRESS -> ColorUtils.mapWaypointInProgress.getColor();
+            case DONE -> ColorUtils.mapWaypointDone.getColor();
         };
     }
 

@@ -111,12 +111,12 @@ public class TaskLayerManager extends InteractableLayerManager {
     private static BufferedImage createMarkerImage(TaskStatus status) {
         BufferedImage image = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
         int fill = 0xC8000000 | (switch (status) {
-            case OPEN -> ColorUtils.MAP_FILL_OPEN.getColor();
-            case IN_PROGRESS -> ColorUtils.MAP_FILL_IN_PROGRESS.getColor();
-            case DONE -> ColorUtils.MAP_FILL_DONE.getColor();
+            case OPEN -> ColorUtils.mapFillOpen.getColor();
+            case IN_PROGRESS -> ColorUtils.mapFillInProgress.getColor();
+            case DONE -> ColorUtils.mapFillDone.getColor();
         } & 0xFFFFFF);
-        int border = 0xB4000000 | (ColorUtils.MAP_BORDER.getColor() & 0xFFFFFF);
-        int text = ColorUtils.MAP_TEXT.getColor();
+        int border = 0xB4000000 | (ColorUtils.mapBorder.getColor() & 0xFFFFFF);
+        int text = ColorUtils.mapText.getColor();
         for (int y = 0; y < 16; y++) {
             for (int x = 0; x < 16; x++) {
                 image.setRGB(x, y, x == 0 || x == 15 || y == 0 || y == 15 ? border : fill);

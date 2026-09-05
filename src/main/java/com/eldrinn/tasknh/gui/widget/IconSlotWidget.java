@@ -75,7 +75,7 @@ public class IconSlotWidget extends Widget<IconSlotWidget>
             String hint = "+";
             int x = (getArea().width - font.getStringWidth(hint)) / 2;
             int y = (getArea().height - font.FONT_HEIGHT) / 2;
-            font.drawString(hint, x, y, com.eldrinn.tasknh.gui.ColorUtils.TEXT_GRAY.getColor());
+            font.drawString(hint, x, y, com.eldrinn.tasknh.gui.ColorUtils.textGray.getColor());
             return;
         }
         ItemStack stack = parseIconItem(iconItem);

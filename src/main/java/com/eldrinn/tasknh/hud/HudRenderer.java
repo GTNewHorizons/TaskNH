@@ -77,7 +77,7 @@ public class HudRenderer {
                 sy - PADDING,
                 sx + blockW + PADDING,
                 sy + totalHeight + PADDING,
-                ColorUtils.BG_HUD.getColor());
+                ColorUtils.backgroundHud.getColor());
         }
 
         int y = sy;
@@ -114,12 +114,12 @@ public class HudRenderer {
         if (iconStack != null) {
             drawItemIcon(iconStack, x, y);
             for (String line : fr.listFormattedStringToWidth(task.title, textW - ICON_SIZE - ICON_GAP)) {
-                fr.drawStringWithShadow(line, x + ICON_SIZE + ICON_GAP, y, ColorUtils.TEXT_WHITE.getColor());
+                fr.drawStringWithShadow(line, x + ICON_SIZE + ICON_GAP, y, ColorUtils.textWhite.getColor());
                 y += LINE_H;
             }
         } else {
             for (String line : fr.listFormattedStringToWidth(task.title, textW)) {
-                fr.drawStringWithShadow(line, x, y, ColorUtils.TEXT_WHITE.getColor());
+                fr.drawStringWithShadow(line, x, y, ColorUtils.textWhite.getColor());
                 y += LINE_H;
             }
         }
@@ -138,10 +138,10 @@ public class HudRenderer {
             for (ChecklistItem st : incomplete) {
                 if (shown >= maxChecklist) break;
                 List<String> lines = fr.listFormattedStringToWidth(st.title, checklistW);
-                fr.drawStringWithShadow("- " + lines.get(0), x + PADDING, y, ColorUtils.TEXT_WHITE.getColor());
+                fr.drawStringWithShadow("- " + lines.get(0), x + PADDING, y, ColorUtils.textWhite.getColor());
                 y += LINE_H;
                 for (int i = 1; i < lines.size(); i++) {
-                    fr.drawStringWithShadow("  " + lines.get(i), x + PADDING, y, ColorUtils.TEXT_WHITE.getColor());
+                    fr.drawStringWithShadow("  " + lines.get(i), x + PADDING, y, ColorUtils.textWhite.getColor());
                     y += LINE_H;
                 }
                 shown++;
@@ -149,14 +149,14 @@ public class HudRenderer {
             for (ChecklistItem st : complete) {
                 if (shown >= maxChecklist) break;
                 List<String> lines = fr.listFormattedStringToWidth(st.title, checklistW);
-                fr.drawStringWithShadow("§m- " + lines.get(0) + "§r", x + PADDING, y, ColorUtils.TEXT_GRAY.getColor());
+                fr.drawStringWithShadow("§m- " + lines.get(0) + "§r", x + PADDING, y, ColorUtils.textGray.getColor());
                 y += LINE_H;
                 for (int i = 1; i < lines.size(); i++) {
                     fr.drawStringWithShadow(
                         "§m  " + lines.get(i) + "§r",
                         x + PADDING,
                         y,
-                        ColorUtils.TEXT_GRAY.getColor());
+                        ColorUtils.textGray.getColor());
                     y += LINE_H;
                 }
                 shown++;
@@ -168,7 +168,7 @@ public class HudRenderer {
                     StatCollector.translateToLocalFormatted("tasknh.gui.row.more", remaining),
                     x + PADDING,
                     y,
-                    ColorUtils.TEXT_GRAY.getColor());
+                    ColorUtils.textGray.getColor());
                 y += LINE_H;
             }
         }
@@ -271,9 +271,9 @@ public class HudRenderer {
 
     private int statusColor(TaskStatus status) {
         return switch (status) {
-            case IN_PROGRESS -> ColorUtils.GOLD.getColor();
-            case DONE -> ColorUtils.GREEN.getColor();
-            default -> ColorUtils.TEXT_GRAY.getColor();
+            case IN_PROGRESS -> ColorUtils.accentGold.getColor();
+            case DONE -> ColorUtils.accentGreen.getColor();
+            default -> ColorUtils.textGray.getColor();
         };
     }
 }
