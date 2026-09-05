@@ -1,6 +1,8 @@
 package com.eldrinn.tasknh.gui.widget;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import net.minecraft.util.StatCollector;
 
@@ -80,10 +82,9 @@ public class TaskListWidget extends Flow {
             searchField.size(W - SEARCH_BTN_W, 20);
             searchField.setTextColor(ColorUtils.TEXT_WHITE.getColor());
             searchField.autoUpdateOnChange(true);
-            searchField.value(new StringValue.Dynamic(() -> data.searchQuery, val -> {
-                data.searchQuery = val;
-                TaskNHGui.open(data);
-            }));
+            // No rebuild here: rebuilding on every keystroke dropped the field's focus, so only one
+            // character made it in per click. The rows filter themselves instead, see below.
+            searchField.value(new StringValue.Dynamic(() -> data.searchQuery, val -> data.searchQuery = val));
             searchRow.child(searchField);
         }
         child(searchRow);
@@ -92,21 +93,32 @@ public class TaskListWidget extends Flow {
         ScrollMemoryList list = new ScrollMemoryList(data.listScroll, TaskRowWidget.SCROLLBAR_W);
         list.size(W, H - 24 - P - 20 - P - 28);
         list.marginTop(P);
-        String query = data.searchQuery.toLowerCase();
+        // Rows for the whole tab are built once; the search query only enables and disables them,
+        // and the list collapses the disabled ones out of the layout. That keeps typing free of
+        // rebuilds, which would take the search field's focus with them.
         for (Task task : allTasks) {
-            if (!matches(task, data, query)) continue;
+            if (task.status != data.activeTab) continue;
             if (task.parentId == null) {
-                list.child(new TaskRowWidget(task, data, false));
-                // Children follow their parent, indented. Nesting is one level deep.
+                // Children follow their parent, indented. Nesting is one level deep. The list is
+                // taken once here rather than per tick, since any change to it rebuilds the rows.
+                List<Task> children = new ArrayList<>();
                 for (Task child : allTasks) {
                     // A subtask stays under its parent whatever its status; only search filters it.
-                    if (task.id.equals(child.parentId) && matchesQuery(child, query)) {
-                        list.child(new TaskRowWidget(child, data, true));
-                    }
+                    if (task.id.equals(child.parentId)) children.add(child);
+                }
+                TaskRowWidget parentRow = new TaskRowWidget(task, data, false);
+                // A parent that doesn't match itself still shows while a child does, so the match
+                // isn't left without the task it belongs to.
+                parentRow.setEnabledIf(w -> matchesQuery(task, query(data)) || anyMatches(children, query(data)));
+                list.child(parentRow);
+                for (Task child : children) {
+                    TaskRowWidget row = new TaskRowWidget(child, data, true);
+                    row.setEnabledIf(w -> matchesQuery(child, query(data)));
+                    list.child(row);
                 }
             } else if (TaskNHClientCache.get(task.parentId) == null) {
                 // Orphaned subtask (parent gone) would otherwise vanish, so show it as a root.
-                list.child(new TaskRowWidget(task, data, false));
+                list.child(searchFiltered(new TaskRowWidget(task, data, false), data, task));
             }
         }
         child(list);
@@ -153,8 +165,21 @@ public class TaskListWidget extends Flow {
                         })));
     }
 
-    private static boolean matches(Task task, TaskNHGuiData data, String query) {
-        return task.status == data.activeTab && matchesQuery(task, query);
+    /** Shows the row only while it matches the current search query, re-checked every tick. */
+    private static TaskRowWidget searchFiltered(TaskRowWidget row, TaskNHGuiData data, Task task) {
+        row.setEnabledIf(w -> matchesQuery(task, query(data)));
+        return row;
+    }
+
+    private static boolean anyMatches(List<Task> tasks, String query) {
+        for (Task task : tasks) {
+            if (matchesQuery(task, query)) return true;
+        }
+        return false;
+    }
+
+    private static String query(TaskNHGuiData data) {
+        return data.searchQuery.toLowerCase();
     }
 
     private static boolean matchesQuery(Task task, String query) {
