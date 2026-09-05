@@ -40,8 +40,7 @@ public class TaskDetailWidget extends Flow {
     private static final int SCROLLBAR_W = 4;
 
     private static final UITexture ICON_ADD = GuiTextures.ADD.withColorOverride(ColorUtils.iconAdd.getColor());
-    private static final UITexture ICON_REMOVE = GuiTextures.REMOVE
-        .withColorOverride(ColorUtils.iconRemove.getColor());
+    private static final UITexture ICON_REMOVE = GuiTextures.REMOVE.withColorOverride(ColorUtils.iconRemove.getColor());
 
     private final TaskNHGuiData data;
     private final Task task;

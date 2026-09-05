@@ -2,7 +2,6 @@ package com.eldrinn.tasknh.gui;
 
 import com.gtnewhorizon.gtnhlib.color.ColorResource;
 
-
 public class ColorUtils {
 
     private static final ColorResource.Factory color = new ColorResource.Factory("tasknh");
