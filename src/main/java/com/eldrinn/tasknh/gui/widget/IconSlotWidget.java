@@ -12,6 +12,7 @@ import com.cleanroommc.modularui.integration.recipeviewer.RecipeViewerGhostIngre
 import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
 import com.cleanroommc.modularui.theme.WidgetThemeEntry;
 import com.cleanroommc.modularui.widget.Widget;
+import com.eldrinn.tasknh.gui.ColorUtils;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -75,7 +76,7 @@ public class IconSlotWidget extends Widget<IconSlotWidget>
             String hint = "+";
             int x = (getArea().width - font.getStringWidth(hint)) / 2;
             int y = (getArea().height - font.FONT_HEIGHT) / 2;
-            font.drawString(hint, x, y, com.eldrinn.tasknh.gui.ColorUtils.TEXT_GRAY.getColor());
+            font.drawString(hint, x, y, ColorUtils.textGray.getColor());
             return;
         }
         ItemStack stack = parseIconItem(iconItem);

@@ -74,11 +74,11 @@ public class TaskRowWidget extends Flow {
         boolean canPin = TaskNHClientCache.canPin();
         IDrawable pinIcon;
         if (pinned) {
-            pinIcon = GuiTextures.FAVORITE.withColorOverride(ColorUtils.PIN_ACTIVE.getColor());
+            pinIcon = GuiTextures.FAVORITE.withColorOverride(ColorUtils.iconPinActive.getColor());
         } else if (canPin) {
             pinIcon = GuiTextures.FAVORITE_OUTLINE;
         } else {
-            pinIcon = GuiTextures.FAVORITE_OUTLINE.withColorOverride(ColorUtils.PIN_INACTIVE.getColor());
+            pinIcon = GuiTextures.FAVORITE_OUTLINE.withColorOverride(ColorUtils.iconPinInactive.getColor());
         }
         ButtonWidget<?> pinBtn = new ButtonWidget<>();
         pinBtn.size(PIN_BTN_W, 20);

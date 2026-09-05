@@ -39,7 +39,7 @@ public class HudSettingsScreen extends GuiScreen {
 
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        drawRect(0, 0, width, height, ColorUtils.BG_OVERLAY.getColor());
+        drawRect(0, 0, width, height, ColorUtils.backgroundOverlay.getColor());
 
         PinnedTasksConfig cfg = TaskNHClientCache.getPinConfig();
         ScaledResolution res = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
@@ -51,12 +51,12 @@ public class HudSettingsScreen extends GuiScreen {
             hint,
             (sw - fontRendererObj.getStringWidth(hint)) / 2,
             6,
-            ColorUtils.TEXT_GRAY.getColor());
+            ColorUtils.textGray.getColor());
 
         int[] pos = hudPos(cfg, sw, sh);
         int hx = pos[0];
         int hy = pos[1];
-        drawRect(hx, hy, hx + HANDLE_SIZE, hy + HANDLE_SIZE, ColorUtils.HANDLE.getColor());
+        drawRect(hx, hy, hx + HANDLE_SIZE, hy + HANDLE_SIZE, ColorUtils.backgroundHandle.getColor());
         GL11.glColor4f(1f, 1f, 1f, 1f);
         GuiTextures.ALL_DIRECTIONS.draw(hx, hy, HANDLE_SIZE, HANDLE_SIZE);
         GL11.glColor4f(1f, 1f, 1f, 1f);
@@ -76,59 +76,59 @@ public class HudSettingsScreen extends GuiScreen {
         int px = (sw - panelW) / 2;
         int py = sh - PANEL_H - PANEL_PADDING;
 
-        drawRect(px - 4, py - 4, px + panelW + 4, py + PANEL_H + 4, ColorUtils.BG_PANEL.getColor());
+        drawRect(px - 4, py - 4, px + panelW + 4, py + PANEL_H + 4, ColorUtils.backgroundPanel.getColor());
 
         int cx = px;
 
         // Scale
         String scaleKey = StatCollector.translateToLocal("tasknh.hud.settings.scale");
-        fontRendererObj.drawStringWithShadow(scaleKey, cx, py + 7, ColorUtils.TEXT_GRAY.getColor());
+        fontRendererObj.drawStringWithShadow(scaleKey, cx, py + 7, ColorUtils.textGray.getColor());
         cx += fontRendererObj.getStringWidth(scaleKey) + 4;
 
-        drawRect(cx, py + 2, cx + 14, py + 22, ColorUtils.BG_BUTTON.getColor());
-        fontRendererObj.drawStringWithShadow("-", cx + 4, py + 7, ColorUtils.TEXT_WHITE.getColor());
+        drawRect(cx, py + 2, cx + 14, py + 22, ColorUtils.backgroundButton.getColor());
+        fontRendererObj.drawStringWithShadow("-", cx + 4, py + 7, ColorUtils.textWhite.getColor());
         cx += 16;
 
         String scaleLabel = String.format("%.2fx", cfg.getScale());
-        fontRendererObj.drawStringWithShadow(scaleLabel, cx, py + 7, ColorUtils.TEXT_WHITE.getColor());
+        fontRendererObj.drawStringWithShadow(scaleLabel, cx, py + 7, ColorUtils.textWhite.getColor());
         cx += fontRendererObj.getStringWidth(scaleLabel) + 4;
 
-        drawRect(cx, py + 2, cx + 14, py + 22, ColorUtils.BG_BUTTON.getColor());
-        fontRendererObj.drawStringWithShadow("+", cx + 3, py + 7, ColorUtils.TEXT_WHITE.getColor());
+        drawRect(cx, py + 2, cx + 14, py + 22, ColorUtils.backgroundButton.getColor());
+        fontRendererObj.drawStringWithShadow("+", cx + 3, py + 7, ColorUtils.textWhite.getColor());
         cx += 20;
 
         // Checklist
         String checklistKey = StatCollector.translateToLocal("tasknh.hud.settings.checklist");
-        fontRendererObj.drawStringWithShadow(checklistKey, cx, py + 7, ColorUtils.TEXT_GRAY.getColor());
+        fontRendererObj.drawStringWithShadow(checklistKey, cx, py + 7, ColorUtils.textGray.getColor());
         cx += fontRendererObj.getStringWidth(checklistKey) + 4;
 
-        drawRect(cx, py + 2, cx + 14, py + 22, ColorUtils.BG_BUTTON.getColor());
-        fontRendererObj.drawStringWithShadow("-", cx + 4, py + 7, ColorUtils.TEXT_WHITE.getColor());
+        drawRect(cx, py + 2, cx + 14, py + 22, ColorUtils.backgroundButton.getColor());
+        fontRendererObj.drawStringWithShadow("-", cx + 4, py + 7, ColorUtils.textWhite.getColor());
         cx += 16;
 
         String checklistLabel = String.valueOf(cfg.getMaxChecklistShown());
-        fontRendererObj.drawStringWithShadow(checklistLabel, cx, py + 7, ColorUtils.TEXT_WHITE.getColor());
+        fontRendererObj.drawStringWithShadow(checklistLabel, cx, py + 7, ColorUtils.textWhite.getColor());
         cx += fontRendererObj.getStringWidth(checklistLabel) + 4;
 
-        drawRect(cx, py + 2, cx + 14, py + 22, ColorUtils.BG_BUTTON.getColor());
-        fontRendererObj.drawStringWithShadow("+", cx + 3, py + 7, ColorUtils.TEXT_WHITE.getColor());
+        drawRect(cx, py + 2, cx + 14, py + 22, ColorUtils.backgroundButton.getColor());
+        fontRendererObj.drawStringWithShadow("+", cx + 3, py + 7, ColorUtils.textWhite.getColor());
         cx += 20;
 
         // Pins
         String pinsKey = StatCollector.translateToLocal("tasknh.hud.settings.tasks");
-        fontRendererObj.drawStringWithShadow(pinsKey, cx, py + 7, ColorUtils.TEXT_GRAY.getColor());
+        fontRendererObj.drawStringWithShadow(pinsKey, cx, py + 7, ColorUtils.textGray.getColor());
         cx += fontRendererObj.getStringWidth(pinsKey) + 4;
 
-        drawRect(cx, py + 2, cx + 14, py + 22, ColorUtils.BG_BUTTON.getColor());
-        fontRendererObj.drawStringWithShadow("-", cx + 4, py + 7, ColorUtils.TEXT_WHITE.getColor());
+        drawRect(cx, py + 2, cx + 14, py + 22, ColorUtils.backgroundButton.getColor());
+        fontRendererObj.drawStringWithShadow("-", cx + 4, py + 7, ColorUtils.textWhite.getColor());
         cx += 16;
 
         String pinsLabel = String.valueOf(cfg.getMaxPinnedTasks());
-        fontRendererObj.drawStringWithShadow(pinsLabel, cx, py + 7, ColorUtils.TEXT_WHITE.getColor());
+        fontRendererObj.drawStringWithShadow(pinsLabel, cx, py + 7, ColorUtils.textWhite.getColor());
         cx += fontRendererObj.getStringWidth(pinsLabel) + 4;
 
-        drawRect(cx, py + 2, cx + 14, py + 22, ColorUtils.BG_BUTTON.getColor());
-        fontRendererObj.drawStringWithShadow("+", cx + 3, py + 7, ColorUtils.TEXT_WHITE.getColor());
+        drawRect(cx, py + 2, cx + 14, py + 22, ColorUtils.backgroundButton.getColor());
+        fontRendererObj.drawStringWithShadow("+", cx + 3, py + 7, ColorUtils.textWhite.getColor());
         cx += 20;
 
         // BG toggle
@@ -136,13 +136,13 @@ public class HudSettingsScreen extends GuiScreen {
             "tasknh.hud.settings.bg",
             cfg.isShowBackground() ? StatCollector.translateToLocal("tasknh.hud.on")
                 : StatCollector.translateToLocal("tasknh.hud.off"));
-        int bgColor = cfg.isShowBackground() ? ColorUtils.GREEN.getColor() : ColorUtils.TEXT_GRAY.getColor();
+        int bgColor = cfg.isShowBackground() ? ColorUtils.accentGreen.getColor() : ColorUtils.textGray.getColor();
         drawRect(
             cx,
             py + 2,
             cx + fontRendererObj.getStringWidth(bgLabel) + 8,
             py + 22,
-            ColorUtils.BG_BUTTON.getColor());
+            ColorUtils.backgroundButton.getColor());
         fontRendererObj.drawStringWithShadow(bgLabel, cx + 4, py + 7, bgColor);
         cx += fontRendererObj.getStringWidth(bgLabel) + 12;
 
@@ -151,13 +151,13 @@ public class HudSettingsScreen extends GuiScreen {
             "tasknh.hud.settings.hud",
             cfg.isHudVisible() ? StatCollector.translateToLocal("tasknh.hud.on")
                 : StatCollector.translateToLocal("tasknh.hud.off"));
-        int hudColor = cfg.isHudVisible() ? ColorUtils.GREEN.getColor() : ColorUtils.TEXT_GRAY.getColor();
+        int hudColor = cfg.isHudVisible() ? ColorUtils.accentGreen.getColor() : ColorUtils.textGray.getColor();
         drawRect(
             cx,
             py + 2,
             cx + fontRendererObj.getStringWidth(hudLabel) + 8,
             py + 22,
-            ColorUtils.BG_BUTTON.getColor());
+            ColorUtils.backgroundButton.getColor());
         fontRendererObj.drawStringWithShadow(hudLabel, cx + 4, py + 7, hudColor);
         cx += fontRendererObj.getStringWidth(hudLabel) + 12;
 
@@ -168,8 +168,8 @@ public class HudSettingsScreen extends GuiScreen {
             py + 2,
             cx + fontRendererObj.getStringWidth(resetLabel) + 8,
             py + 22,
-            ColorUtils.BG_DANGER.getColor());
-        fontRendererObj.drawStringWithShadow(resetLabel, cx + 4, py + 7, ColorUtils.TEXT_WHITE.getColor());
+            ColorUtils.backgroundDanger.getColor());
+        fontRendererObj.drawStringWithShadow(resetLabel, cx + 4, py + 7, ColorUtils.textWhite.getColor());
     }
 
     @Override

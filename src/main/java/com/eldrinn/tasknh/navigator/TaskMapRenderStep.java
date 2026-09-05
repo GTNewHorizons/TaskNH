@@ -40,22 +40,22 @@ public class TaskMapRenderStep extends UniversalInteractableStep<TaskMapLocation
                 topX + width / 2,
                 topY - FONT_HEIGHT * labelScale - 5,
                 location.getColor(),
-                ColorUtils.BG_HUD.getColor(),
+                ColorUtils.backgroundHud.getColor(),
                 true,
                 labelScale);
         }
 
         int bgColor = bgColor(location.getStatus());
         DrawUtils.drawRect(topX, topY, width, height, bgColor, 200);
-        DrawUtils.drawHollowRect(topX, topY, width, height, ColorUtils.MAP_BORDER.getColor(), 180);
+        DrawUtils.drawHollowRect(topX, topY, width, height, ColorUtils.mapBorder.getColor(), 180);
         String letter = statusLetter(location.getStatus());
         double glyphScale = isXaero ? getFontScale() : getFontScale() * getZoomScale(1, 2, 3, 5);
         DrawUtils.drawLabel(
             letter,
             topX + width / 2,
             topY + (height - FONT_HEIGHT * glyphScale) / 2,
-            ColorUtils.MAP_TEXT.getColor(),
-            ColorUtils.BG_HUD.getColor(),
+            ColorUtils.mapText.getColor(),
+            ColorUtils.backgroundHud.getColor(),
             true,
             glyphScale);
     }
@@ -84,9 +84,9 @@ public class TaskMapRenderStep extends UniversalInteractableStep<TaskMapLocation
 
     private static int bgColor(TaskStatus status) {
         return switch (status) {
-            case OPEN -> ColorUtils.MAP_FILL_OPEN.getColor();
-            case IN_PROGRESS -> ColorUtils.MAP_FILL_IN_PROGRESS.getColor();
-            case DONE -> ColorUtils.MAP_FILL_DONE.getColor();
+            case OPEN -> ColorUtils.mapFillOpen.getColor();
+            case IN_PROGRESS -> ColorUtils.mapFillInProgress.getColor();
+            case DONE -> ColorUtils.mapFillDone.getColor();
         };
     }
 

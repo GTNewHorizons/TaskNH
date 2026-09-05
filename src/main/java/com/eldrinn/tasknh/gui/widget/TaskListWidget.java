@@ -80,7 +80,7 @@ public class TaskListWidget extends Flow {
         if (data.searchExpanded) {
             PlainTextField searchField = new PlainTextField();
             searchField.size(W - SEARCH_BTN_W, 20);
-            searchField.setTextColor(ColorUtils.TEXT_WHITE.getColor());
+            searchField.setTextColor(ColorUtils.textWhite.getColor());
             searchField.autoUpdateOnChange(true);
             // No rebuild here: rebuilding on every keystroke dropped the field's focus, so only one
             // character made it in per click. The rows filter themselves instead, see below.
