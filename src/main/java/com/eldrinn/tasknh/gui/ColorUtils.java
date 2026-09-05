@@ -18,6 +18,7 @@ public class ColorUtils {
         mapWaypointInProgress   = color.rgb("mapWaypointInProgress",    "0xAAAAFF"),
         mapWaypointDone         = color.rgb("mapWaypointDone",          "0xAAFFAA"),
 
+        //darker tones, separate alpha in DrawUtils
         mapFillOpen             = color.rgb("mapFillOpen",              "0x888800"),
         mapFillInProgress       = color.rgb("mapFillInProgress",        "0x004488"),
         mapFillDone             = color.rgb("mapFillDone",              "0x228822"),
