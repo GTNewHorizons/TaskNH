@@ -40,6 +40,7 @@ public class ClientProxy extends CommonProxy {
             .bus()
             .register(this);
         MinecraftForge.EVENT_BUS.register(new HudRenderer());
+        MinecraftForge.EVENT_BUS.register(this); // theme reloads are posted on the Forge bus
         TaskNHClientCache.loadConfig();
         if (cpw.mods.fml.common.Loader.isModLoaded("navigator")) {
             com.gtnewhorizons.navigator.api.NavigatorApi
@@ -62,5 +63,10 @@ public class ClientProxy extends CommonProxy {
             TaskNHGui.open();
         }
         TaskNHGui.tick();
+    }
+
+    @SubscribeEvent
+    public void onThemeReload(com.cleanroommc.modularui.theme.ReloadThemeEvent.Post event) {
+        TaskNHGui.notifyThemeReloaded();
     }
 }
