@@ -96,6 +96,20 @@ public class TaskNHGui {
     public static void notifySyncReceived() {
         // Echo of our own edit: the cache is already up to date, so don't rebuild.
         if (isWithinSelfEditWindow()) return;
+        rebuildIfOpen();
+    }
+
+    /**
+     * Called on /reloadThemes. ModularUI builds new theme objects, but a panel keeps the one it
+     * resolved when it opened, so the open GUI has to be rebuilt to show the reloaded theme.
+     */
+    @SideOnly(Side.CLIENT)
+    public static void notifyThemeReloaded() {
+        rebuildIfOpen();
+    }
+
+    @SideOnly(Side.CLIENT)
+    private static void rebuildIfOpen() {
         if (activeData == null) return;
         Minecraft mc = Minecraft.getMinecraft();
         if (!(mc.currentScreen instanceof IMuiScreen)) {
