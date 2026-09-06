@@ -4,6 +4,7 @@ import java.util.List;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.util.StatCollector;
 
 import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
@@ -63,8 +64,16 @@ public class AssigneePickerWidget extends Flow {
             child(
                 new ButtonWidget<>().size(width, 20)
                     .child(row)
+                    .tooltipDynamic(tip -> {
+                        if (task.title.isEmpty()) {
+                            tip.addLine(StatCollector.translateToLocal("tasknh.gui.detail.assignees.needs_title"));
+                        }
+                    })
                     .onMousePressed(btn -> {
                         if (btn != 0) return false;
+                        // An untitled task has not been created on the server yet, so assigning would only produce a
+                        // throwaway local draft on every click.
+                        if (task.title.isEmpty()) return true;
                         if (task.assignees.stream()
                             .anyMatch(
                                 ap -> ap.playerId()
