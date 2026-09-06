@@ -42,7 +42,7 @@ public class IconSlotWidget extends Widget<IconSlotWidget>
     public IconSlotWidget(ItemHolder iconHolder, Runnable onChanged, String tooltipKey) {
         this.iconHolder = iconHolder;
         this.onChanged = onChanged;
-        tooltip().addLine(net.minecraft.util.StatCollector.translateToLocal(tooltipKey));
+        tooltip().addStringLines(com.eldrinn.tasknh.gui.LangSplit.splitLocalized(tooltipKey));
     }
 
     @Override
