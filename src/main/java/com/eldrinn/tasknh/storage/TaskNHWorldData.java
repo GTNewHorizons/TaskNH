@@ -79,7 +79,13 @@ public class TaskNHWorldData extends WorldSavedData {
         return map == null ? null : map.get(taskId);
     }
 
+    /** A new task goes to the end of the manual order, whatever created it. */
     public void addTask(UUID teamId, Task task) {
+        int maxOrder = 0;
+        for (Task existing : getTeamTasks(teamId)) {
+            maxOrder = Math.max(maxOrder, existing.order);
+        }
+        task.order = maxOrder + 1;
         teamTasks.computeIfAbsent(teamId, k -> new LinkedHashMap<>())
             .put(task.id, task);
         markDirty();
