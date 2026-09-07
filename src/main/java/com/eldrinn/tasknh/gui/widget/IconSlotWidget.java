@@ -9,21 +9,23 @@ import com.cleanroommc.modularui.api.ITheme;
 import com.cleanroommc.modularui.api.widget.Interactable;
 import com.cleanroommc.modularui.drawable.GuiDraw;
 import com.cleanroommc.modularui.integration.recipeviewer.RecipeViewerGhostIngredientSlot;
+import com.cleanroommc.modularui.integration.recipeviewer.RecipeViewerIngredientProvider;
 import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
 import com.cleanroommc.modularui.theme.WidgetThemeEntry;
 import com.cleanroommc.modularui.widget.Widget;
 import com.eldrinn.tasknh.gui.ColorUtils;
+import com.eldrinn.tasknh.integration.NEIRecipeIntegration;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 /**
  * A ghost slot for setting a task icon via NEI drag-and-drop.
- * Right-click clears the icon.
+ * Right-click clears the icon, left-click opens the item's recipes in NEI.
  */
 @SideOnly(Side.CLIENT)
 public class IconSlotWidget extends Widget<IconSlotWidget>
-    implements RecipeViewerGhostIngredientSlot<ItemStack>, Interactable {
+    implements RecipeViewerGhostIngredientSlot<ItemStack>, RecipeViewerIngredientProvider, Interactable {
 
     private final ItemHolder iconHolder;
     private final Runnable onChanged;
@@ -59,7 +61,20 @@ public class IconSlotWidget extends Widget<IconSlotWidget>
             onChanged.run();
             return Interactable.Result.SUCCESS;
         }
+        if (button == 0 && NEIRecipeIntegration.isAvailable()) {
+            ItemStack stack = parseIconItem(iconHolder.get());
+            if (stack != null) {
+                NEIRecipeIntegration.showRecipes(stack);
+                return Interactable.Result.SUCCESS;
+            }
+        }
         return Interactable.Result.IGNORE;
+    }
+
+    /** Lets NEI resolve the hovered item, so its R and U hotkeys work over this slot. */
+    @Override
+    public ItemStack getStackForRecipeViewer() {
+        return parseIconItem(iconHolder.get());
     }
 
     @Override
