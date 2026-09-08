@@ -25,6 +25,14 @@ public class Task {
     public String iconItem; // format: "modid:itemname:meta", e.g. "minecraft:diamond:0"
     @Nullable
     public String trackItem; // same format as iconItem; task auto-completes once seen in a member's inventory
+    /**
+     * Upper bound for {@link #trackItemCount}, enforced wherever the count is set.
+     * A main inventory holds 36 slots of at most 64, so a larger count could never be reached.
+     * Items that stack lower than 64 top out below this.
+     */
+    public static final int MAX_TRACK_ITEM_COUNT = 36 * 64;
+    /** How many of trackItem one member has to carry. Set from the stack size dragged out of NEI. */
+    public int trackItemCount = 1;
     public boolean showOnMap = false;
     /** Parent task id, or null for a root task. Only one nesting level is allowed. */
     @Nullable
@@ -60,6 +68,7 @@ public class Task {
 
         if (iconItem != null) tag.setString("iconItem", iconItem);
         if (trackItem != null) tag.setString("trackItem", trackItem);
+        if (trackItemCount > 1) tag.setInteger("trackItemCount", trackItemCount);
         tag.setBoolean("showOnMap", showOnMap);
         if (parentId != null) {
             tag.setLong("parentMost", parentId.getMostSignificantBits());
@@ -95,6 +104,8 @@ public class Task {
 
         if (tag.hasKey("iconItem")) task.iconItem = tag.getString("iconItem");
         if (tag.hasKey("trackItem")) task.trackItem = tag.getString("trackItem");
+        // Tasks saved before the count existed track a single item.
+        task.trackItemCount = tag.hasKey("trackItemCount") ? tag.getInteger("trackItemCount") : 1;
         task.showOnMap = tag.getBoolean("showOnMap");
         if (tag.hasKey("parentMost")) {
             task.parentId = new UUID(tag.getLong("parentMost"), tag.getLong("parentLeast"));
@@ -130,6 +141,7 @@ public class Task {
 
         buf.writeStringToBuffer(iconItem != null ? iconItem : "");
         buf.writeStringToBuffer(trackItem != null ? trackItem : "");
+        buf.writeInt(trackItemCount);
         buf.writeBoolean(showOnMap);
         buf.writeBoolean(parentId != null);
         if (parentId != null) {
@@ -169,6 +181,10 @@ public class Task {
         task.iconItem = icon.isEmpty() ? null : icon;
         String track = buf.readStringFromBuffer(256);
         task.trackItem = track.isEmpty() ? null : track;
+        int trackCount = buf.readInt();
+        if (trackCount < 1 || trackCount > MAX_TRACK_ITEM_COUNT)
+            throw new IOException("Invalid track item count: " + trackCount);
+        task.trackItemCount = trackCount;
         task.showOnMap = buf.readBoolean();
         if (buf.readBoolean()) {
             task.parentId = new UUID(buf.readLong(), buf.readLong());

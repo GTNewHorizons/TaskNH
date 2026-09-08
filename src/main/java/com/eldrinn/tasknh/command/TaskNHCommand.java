@@ -273,6 +273,7 @@ public class TaskNHCommand extends CommandBase {
                     obj.addProperty("status", t.status.name());
                     if (t.iconItem != null) obj.addProperty("iconItem", t.iconItem);
                     if (t.trackItem != null) obj.addProperty("trackItem", t.trackItem);
+                    if (t.trackItemCount > 1) obj.addProperty("trackItemCount", t.trackItemCount);
                     obj.addProperty("showOnMap", t.showOnMap);
                     if (t.location != null) {
                         JsonObject loc = new JsonObject();
@@ -382,6 +383,12 @@ public class TaskNHCommand extends CommandBase {
                             .getAsString();
                         if (obj.has("trackItem")) t.trackItem = obj.get("trackItem")
                             .getAsString();
+                        if (obj.has("trackItemCount")) t.trackItemCount = Math.min(
+                            Task.MAX_TRACK_ITEM_COUNT,
+                            Math.max(
+                                1,
+                                obj.get("trackItemCount")
+                                    .getAsInt()));
                         if (obj.has("showOnMap")) t.showOnMap = obj.get("showOnMap")
                             .getAsBoolean();
                         if (obj.has("location")) {

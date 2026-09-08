@@ -31,6 +31,9 @@ public class TaskNHGuiData {
     /** Whether the search field is expanded. */
     public boolean searchExpanded = false;
 
+    /** Whether the tracked item count field is shown under the slot. Toggled by middle-clicking the slot. */
+    public boolean trackCountExpanded = false;
+
     /** Scroll state of the task list, kept across rebuilds. */
     public final ScrollMemoryList.Memory listScroll = new ScrollMemoryList.Memory();
 
