@@ -11,6 +11,7 @@ tasknh.gui.tab.done=Готово
 tasknh.gui.detail.description=Описание:
 tasknh.gui.detail.status=Статус:
 tasknh.gui.detail.assignees=Исполнители:
+tasknh.gui.detail.assignees.needs_title=Сначала введите название задачи
 tasknh.gui.detail.location=Координаты:
 tasknh.gui.detail.subtasks=Подзадачи:
 tasknh.gui.detail.parent=Родитель:
