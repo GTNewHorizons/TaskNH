@@ -51,6 +51,8 @@ public class ItemTrackHandler {
         } else {
             listener.player = player;
         }
+        // A dimension change reuses the same player and container, so the listener may already be attached.
+        player.inventoryContainer.removeCraftingFromCrafters(listener);
         player.inventoryContainer.addCraftingToCrafters(listener);
         // Check once on join: the item may have been obtained while offline or in another dimension.
         schedule(player);
