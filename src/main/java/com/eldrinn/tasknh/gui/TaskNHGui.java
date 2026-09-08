@@ -59,8 +59,8 @@ public class TaskNHGui {
     }
 
     public static void open(TaskNHGuiData data) {
-        LOG.info(
-            "[TaskNHGui] open() queued — tab={} selected={} createMode={}",
+        LOG.debug(
+            "open() queued — tab={} selected={} createMode={}",
             data.activeTab,
             data.selectedTaskId,
             data.createMode);
@@ -126,13 +126,10 @@ public class TaskNHGui {
         TaskNHGuiData data = pendingOpen;
         if (data == null) return;
         pendingOpen = null;
-        LOG.info("[TaskNHGui] tick() draining — tab={}", data.activeTab);
         try {
-            LOG.info("[TaskNHGui] tick() building panel");
             int height = getHeight();
             ModularPanel panel = ModularPanel.defaultPanel("tasknh_main", WIDTH, height);
             panel.themeOverride(currentTheme);
-            LOG.info("[TaskNHGui] tick() building widgets");
             int initialPage = (data.createMode || data.selectedTaskId != null) ? 1 : 0;
             panel.child(
                 new PagedWidget<>().size(WIDTH, height)
@@ -140,16 +137,15 @@ public class TaskNHGui {
                     .addPage(new TaskDetailWidget(data))
                     .controller(data.pageController)
                     .initialPage(initialPage));
-            LOG.info("[TaskNHGui] tick() calling ClientGUI.open()");
             UISettings settings = new UISettings();
             settings.getRecipeViewerSettings()
                 .enable();
             settings.customContainer(ModularContainer::new);
             ClientGUI.open(new ModularScreen("tasknh", panel), settings);
             activeData = data;
-            LOG.info("[TaskNHGui] tick() done");
+            LOG.debug("tick() opened — tab={}", data.activeTab);
         } catch (Exception e) {
-            LOG.error("[TaskNHGui] tick() FAILED", e);
+            LOG.error("tick() FAILED", e);
         }
     }
 }
