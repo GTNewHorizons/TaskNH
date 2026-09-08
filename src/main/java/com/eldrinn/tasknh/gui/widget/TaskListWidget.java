@@ -6,6 +6,7 @@ import java.util.List;
 
 import net.minecraft.util.StatCollector;
 
+import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.drawable.GuiTextures;
 import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.value.BoolValue;
@@ -18,7 +19,6 @@ import com.eldrinn.tasknh.cache.TaskNHClientCache;
 import com.eldrinn.tasknh.data.Task;
 import com.eldrinn.tasknh.data.TaskStatus;
 import com.eldrinn.tasknh.gui.ColorUtils;
-import com.eldrinn.tasknh.gui.LangSplit;
 import com.eldrinn.tasknh.gui.TaskNHGui;
 import com.eldrinn.tasknh.gui.TaskNHGuiData;
 
@@ -68,7 +68,7 @@ public class TaskListWidget extends Flow {
         searchRow.child(
             new ButtonWidget<>().size(SEARCH_BTN_W, 20)
                 .overlay(GuiTextures.SEARCH)
-                .addTooltipStringLines(LangSplit.splitLocalized("tasknh.gui.search.tooltip"))
+                .addTooltipLine(IKey.lang("tasknh.gui.search.tooltip"))
                 .onMousePressed(btn -> {
                     if (btn != 0) return false;
                     data.searchExpanded = !data.searchExpanded;
@@ -147,7 +147,7 @@ public class TaskListWidget extends Flow {
                 .child(
                     new ButtonWidget<>().size(ICON_BTN_W, ICON_BTN_W)
                         .overlay(GuiTextures.GEAR)
-                        .addTooltipStringLines(LangSplit.splitLocalized("tasknh.gui.hud_settings.tooltip"))
+                        .addTooltipLine(IKey.lang("tasknh.gui.hud_settings.tooltip"))
                         .onMousePressed(btn -> {
                             if (btn != 0) return false;
                             net.minecraft.client.Minecraft.getMinecraft()
@@ -157,7 +157,7 @@ public class TaskListWidget extends Flow {
                 .child(
                     new ButtonWidget<>().size(ICON_BTN_W, ICON_BTN_W)
                         .overlay(TaskNHGui.isDarkTheme() ? GuiTextures.SUN : GuiTextures.MOON)
-                        .addTooltipStringLines(LangSplit.splitLocalized("tasknh.gui.theme_toggle.tooltip"))
+                        .addTooltipLine(IKey.lang("tasknh.gui.theme_toggle.tooltip"))
                         .onMousePressed(btn -> {
                             if (btn != 0) return false;
                             TaskNHGui.toggleTheme();

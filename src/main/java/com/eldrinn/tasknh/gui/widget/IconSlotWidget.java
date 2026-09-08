@@ -6,6 +6,7 @@ import net.minecraft.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import com.cleanroommc.modularui.api.ITheme;
+import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.Interactable;
 import com.cleanroommc.modularui.drawable.GuiDraw;
 import com.cleanroommc.modularui.integration.recipeviewer.RecipeViewerGhostIngredientSlot;
@@ -42,7 +43,7 @@ public class IconSlotWidget extends Widget<IconSlotWidget>
     public IconSlotWidget(ItemHolder iconHolder, Runnable onChanged, String tooltipKey) {
         this.iconHolder = iconHolder;
         this.onChanged = onChanged;
-        tooltip().addStringLines(com.eldrinn.tasknh.gui.LangSplit.splitLocalized(tooltipKey));
+        addTooltipLine(IKey.lang(tooltipKey));
     }
 
     @Override
