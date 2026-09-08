@@ -1,5 +1,7 @@
 package com.eldrinn.tasknh.gui;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
@@ -30,6 +32,12 @@ public class TaskNHGuiData {
 
     /** Whether the search field is expanded. */
     public boolean searchExpanded = false;
+
+    /**
+     * Parent tasks whose done subtasks are shown in the list. Static so the choice survives closing
+     * the GUI, which builds a new instance every time. Resets when the player leaves the game.
+     */
+    public static final Set<UUID> shownDoneChildren = new HashSet<>();
 
     /** Scroll state of the task list, kept across rebuilds. */
     public final ScrollMemoryList.Memory listScroll = new ScrollMemoryList.Memory();

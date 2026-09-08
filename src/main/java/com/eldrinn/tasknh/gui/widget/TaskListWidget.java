@@ -102,11 +102,18 @@ public class TaskListWidget extends Flow {
                 // Children follow their parent, indented. Nesting is one level deep. The list is
                 // taken once here rather than per tick, since any change to it rebuilds the rows.
                 List<Task> children = new ArrayList<>();
+                int doneChildren = 0;
+                boolean showDone = TaskNHGuiData.shownDoneChildren.contains(task.id);
                 for (Task child : allTasks) {
-                    // A subtask stays under its parent whatever its status; only search filters it.
-                    if (task.id.equals(child.parentId)) children.add(child);
+                    if (!task.id.equals(child.parentId)) continue;
+                    // A done subtask hides under the eye button, so the list keeps showing what is left to do.
+                    if (child.status == TaskStatus.DONE) {
+                        doneChildren++;
+                        if (!showDone) continue;
+                    }
+                    children.add(child);
                 }
-                TaskRowWidget parentRow = new TaskRowWidget(task, data, false);
+                TaskRowWidget parentRow = new TaskRowWidget(task, data, false, doneChildren);
                 // A parent that doesn't match itself still shows while a child does, so the match
                 // isn't left without the task it belongs to.
                 parentRow.setEnabledIf(w -> matchesQuery(task, query(data)) || anyMatches(children, query(data)));
