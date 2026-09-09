@@ -27,6 +27,7 @@ tasknh.gui.detail.show_on_map.on=ВКЛ
 tasknh.gui.detail.show_on_map.off=ВЫКЛ
 tasknh.gui.detail.icon_none=(нет)
 tasknh.gui.row.more= +%s ещё
+tasknh.gui.row.done_children=Выполненных подзадач: %s
 tasknh.gui.placeholder=Выберите таск или нажмите '+ Новый таск'.
 tasknh.gui.not_found=Таск не найден.
 tasknh.chat.assigned=§a[TaskNH]§r Тебя назначили на задачу: §e%s

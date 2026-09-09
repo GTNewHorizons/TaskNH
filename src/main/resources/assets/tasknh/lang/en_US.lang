@@ -27,6 +27,7 @@ tasknh.gui.detail.show_on_map.on=ON
 tasknh.gui.detail.show_on_map.off=OFF
 tasknh.gui.detail.icon_none=(none)
 tasknh.gui.row.more= +%s more
+tasknh.gui.row.done_children=Completed subtasks: %s
 tasknh.gui.placeholder=Select a task or press '+ New Task'.
 tasknh.gui.not_found=Task not found.
 tasknh.chat.assigned=§a[TaskNH]§r You have been assigned to: §e%s

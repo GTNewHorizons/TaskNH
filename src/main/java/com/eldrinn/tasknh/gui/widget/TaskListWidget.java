@@ -114,9 +114,13 @@ public class TaskListWidget extends Flow {
             // Children follow their parent, indented. Nesting is one level deep. The list is
             // taken once here rather than per tick, since any change to it rebuilds the rows.
             List<Task> children = new ArrayList<>();
+            int doneChildren = 0;
+            boolean showDone = TaskNHGuiData.shownDoneChildren.contains(task.id);
             for (Task child : allTasks) {
-                // A subtask stays under its parent whatever its status; only search filters it.
-                if (task.id.equals(child.parentId)) children.add(child);
+                // A subtask stays under its parent whatever its status; the search and the eye button filter it.
+                if (!task.id.equals(child.parentId)) continue;
+                if (child.status == TaskStatus.DONE) doneChildren++;
+                children.add(child);
             }
             children.sort(ORDER);
             // A parent and its subtasks are dragged as one block, so nesting survives a reorder.
@@ -126,26 +130,30 @@ public class TaskListWidget extends Flow {
                 .width(TaskRowWidget.ROW_WIDTH)
                 .coverChildrenHeight();
             block.collapseDisabledChild();
-            TaskRowWidget parentRow = new TaskRowWidget(task, data, false);
+            TaskRowWidget parentRow = new TaskRowWidget(task, data, false, doneChildren);
             // A parent that doesn't match itself still shows while a child does, so the match
             // isn't left without the task it belongs to.
             parentRow.setEnabledIf(w -> matchesQuery(task, query(data)) || anyMatches(children, query(data)));
             block.child(parentRow);
             for (Task child : children) {
+                // A done subtask hides under the eye button, so the block keeps showing what is left
+                // to do. A search still reaches it: the row is built either way and only disabled.
+                boolean hidden = child.status == TaskStatus.DONE && !showDone;
                 TaskRowWidget row = new TaskRowWidget(
                     child,
                     data,
                     true,
                     swapAction(children, child, -1, data),
                     swapAction(children, child, 1, data));
-                row.setEnabledIf(w -> matchesQuery(child, query(data)));
+                row.setEnabledIf(w -> matchesQuery(child, query(data)) && (!hidden || !query(data).isEmpty()));
                 block.child(row);
             }
             TaskBlockItem item = new TaskBlockItem(task, () -> {
                 List<Task> rows = new ArrayList<>();
                 if (matchesQuery(task, query(data)) || anyMatches(children, query(data))) rows.add(task);
                 for (Task child : children) {
-                    if (matchesQuery(child, query(data))) rows.add(child);
+                    boolean hidden = child.status == TaskStatus.DONE && !showDone;
+                    if (matchesQuery(child, query(data)) && (!hidden || !query(data).isEmpty())) rows.add(child);
                 }
                 return rows;
             }, clicked -> {

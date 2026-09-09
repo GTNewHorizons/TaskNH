@@ -73,6 +73,9 @@ public class TaskNHClientCache {
         }
         // Remove stale pins in one batch — single save if anything changed
         pinConfig.removeStale(tasks.keySet());
+        // The same for the parents whose done subtasks are shown: the cache is replaced on every sync,
+        // so this also drops what is left over from another world or server.
+        com.eldrinn.tasknh.gui.TaskNHGuiData.shownDoneChildren.retainAll(tasks.keySet());
         if (cpw.mods.fml.common.Loader.isModLoaded("navigator")) {
             com.eldrinn.tasknh.navigator.TaskLayerManager.INSTANCE.refreshFromCache(tasks.values());
         }

@@ -41,13 +41,19 @@ public class TaskRowWidget extends Flow {
     public static final int ROW_HEIGHT = 20;
     private static final int ICON_W = 20;
     private static final int PIN_BTN_W = 20;
+    private static final int DONE_BTN_W = 20;
     /** Width of the reorder column, holding the up and down buttons stacked on top of each other. */
     private static final int MOVE_BTN_W = 16;
     /** Left offset of a child task row, so nesting is visible in the flat list. */
     private static final int INDENT_W = 16;
 
     public TaskRowWidget(Task task, TaskNHGuiData data, boolean isChild) {
-        this(task, data, isChild, null, null);
+        this(task, data, isChild, 0, null, null);
+    }
+
+    /** {@code doneChildren} is the number of done subtasks hidden behind this row's eye button. */
+    public TaskRowWidget(Task task, TaskNHGuiData data, boolean isChild, int doneChildren) {
+        this(task, data, isChild, doneChildren, null, null);
     }
 
     /**
@@ -55,6 +61,11 @@ public class TaskRowWidget extends Flow {
      * @param moveDown swaps this task with the one below it, or null when it is already last
      */
     public TaskRowWidget(Task task, TaskNHGuiData data, boolean isChild, @Nullable Runnable moveUp,
+        @Nullable Runnable moveDown) {
+        this(task, data, isChild, 0, moveUp, moveDown);
+    }
+
+    private TaskRowWidget(Task task, TaskNHGuiData data, boolean isChild, int doneChildren, @Nullable Runnable moveUp,
         @Nullable Runnable moveDown) {
         super(com.cleanroommc.modularui.api.GuiAxis.X);
         final int indent = isChild ? INDENT_W : 0;
@@ -78,7 +89,10 @@ public class TaskRowWidget extends Flow {
         if (task.id.equals(data.selectedTaskId)) {
             selectBtn.background(new Rectangle().setColor(ColorUtils.backgroundRowSelected.getColor()));
         }
-        selectBtn.child(buildRowContent(task, SELECT_BTN_W));
+        // The row keeps its full width, but the content stops short of the done button so no text
+        // ends up underneath it. A row without that button gives the whole width to the title.
+        final int CONTENT_W = SELECT_BTN_W - (doneChildren > 0 ? DONE_BTN_W : 0);
+        selectBtn.child(buildRowContent(task, SELECT_BTN_W, CONTENT_W));
 
         child(selectBtn);
         if (isChild) {
@@ -88,6 +102,29 @@ public class TaskRowWidget extends Flow {
                     .child(moveButton(GuiTextures.MOVE_UP, moveUp))
                     .child(moveButton(GuiTextures.MOVE_DOWN, moveDown)));
             return;
+        }
+
+        if (doneChildren > 0) {
+            boolean shown = TaskNHGuiData.shownDoneChildren.contains(task.id);
+            ButtonWidget<?> doneBtn = new ButtonWidget<>();
+            doneBtn.size(DONE_BTN_W, 20);
+            // Sits left of the pin button. Flow skips children whose position on its axis is set,
+            // so the button takes no width from the row itself.
+            doneBtn.right(PIN_BTN_W);
+            doneBtn.overlay(shown ? GuiTextures.VISIBLE : GuiTextures.INVISIBLE);
+            doneBtn.addTooltipLine(
+                String.format(
+                    net.minecraft.util.StatCollector.translateToLocal("tasknh.gui.row.done_children"),
+                    doneChildren));
+            doneBtn.onMousePressed(btn -> {
+                if (btn != 0) return false;
+                if (!TaskNHGuiData.shownDoneChildren.remove(task.id)) {
+                    TaskNHGuiData.shownDoneChildren.add(task.id);
+                }
+                TaskNHGui.open(data);
+                return true;
+            });
+            child(doneBtn);
         }
 
         boolean pinned = TaskNHClientCache.isPinned(task.id);
@@ -134,7 +171,7 @@ public class TaskRowWidget extends Flow {
     private static final int HEAD_SIZE = 8;
     private static final int HEAD_GAP = 2;
 
-    private static Flow buildRowContent(Task task, int SELECT_BTN_W) {
+    private static Flow buildRowContent(Task task, int SELECT_BTN_W, int CONTENT_W) {
         ItemStack stack = IconSlotWidget.parseIconItem(task.iconItem);
         Flow row = Flow.row()
             .size(SELECT_BTN_W, 20);
@@ -152,7 +189,7 @@ public class TaskRowWidget extends Flow {
         }
         int leftPad = stack == null ? TEXT_PAD : 0;
         int assigneeW = assigneeBlockWidth(task);
-        int maxTitleW = SELECT_BTN_W - used - leftPad - assigneeW;
+        int maxTitleW = CONTENT_W - used - leftPad - assigneeW;
         int titlePixelW = Minecraft.getMinecraft().fontRenderer.getStringWidth(title) + 4;
         var titleLabel = new TextWidget<>(title);
         titleLabel.textAlign(Alignment.CenterLeft);
