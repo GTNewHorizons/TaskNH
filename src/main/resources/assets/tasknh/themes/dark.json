@@ -1,43 +1,76 @@
 {
-  "color": "0xFF4A4948",
-  "textColor": "0xFFE0E0E0",
-  "textShadow": false,
+  "textColor": "#AAAAAA",
+  "textShadow": "false",
   "panel": {
-    "color": "0xFF4A4948"
+    "background": {
+      "type": "texture",
+      "location": "tasknh:gui/dark_mode/background",
+      "imageWidth": 12,
+      "imageHeight": 12,
+      "border": 4
+    }
   },
   "button": {
-    "background": {"type": "texture", "name": "mc_button"},
-    "color": "0xFF434241",
-    "textColor": "0xFFE0E0E0",
-    "textShadow": false
+    "background": {
+      "type": "texture",
+      "location": "tasknh:gui/dark_mode/mc_button",
+      "imageWidth": 14,
+      "imageHeight": 14,
+      "border": 1
+    },
+    "iconColor": "#AAAAAA"
   },
   "button:hover": {
-    "background": {"type": "texture", "name": "mc_button_hovered"},
-    "color": "0xFF555452",
-    "textColor": "0xFFE0E0E0",
-    "textShadow": false
+    "background": {
+      "type": "texture",
+      "location": "tasknh:gui/dark_mode/mc_button_hover",
+      "imageWidth": 14,
+      "imageHeight": 14,
+      "border": 1
+    }
   },
   "toggleButton": {
-    "background": {"type": "texture", "name": "mc_button"},
-    "selectedBackground": {"type": "texture", "name": "mc_button_pressed"},
-    "color": "0xFF434241",
-    "textColor": "0xFFE0E0E0",
-    "textShadow": false,
-    "selectedColor": "0xFF3C3B3A",
-    "selectedTextColor": "0xFFFFFFFF"
+    "background": {
+      "type": "texture",
+      "location": "tasknh:gui/dark_mode/mc_button",
+      "imageWidth": 14,
+      "imageHeight": 14,
+      "border": 1
+    },
+    "textColor": "#AAAAAA",
+    "selectedBackground": {
+      "type": "texture",
+      "location": "tasknh:gui/dark_mode/mc_button_pressed",
+      "imageWidth": 14,
+      "imageHeight": 14,
+      "border": 1
+    },
+    "selectedTextColor": "#BFBFBF",
+    "selectedIconColor": "#AAAAAA"
   },
   "toggleButton:hover": {
-    "background": {"type": "texture", "name": "mc_button_hovered"},
-    "selectedBackground": {"type": "texture", "name": "mc_button_hovered_pressed"},
-    "color": "0xFF555452",
-    "textColor": "0xFFE0E0E0",
-    "textShadow": false,
-    "selectedColor": "0xFF3C3B3A",
-    "selectedTextColor": "0xFFFFFFFF"
+    "background": {
+      "type": "texture",
+      "location": "tasknh:gui/dark_mode/mc_button_hover",
+      "imageWidth": 14,
+      "imageHeight": 14,
+      "border": 1
+    },
+    "selectedIconColor": "#AAAAAA"
   },
-  "textField": {
-    "color": "0xFF2C2C2C",
-    "textColor": "0xFFE0E0E0",
-    "textShadow": false
+  "scrollbar": {
+    "background": {
+      "type": "texture",
+      "location": "tasknh:gui/dark_mode/scroll",
+      "imageWidth": 4,
+      "imageHeight": 4,
+      "border": 1
+    }
+  },
+  "itemSlot": {
+    "background": {
+      "type": "texture",
+      "location": "tasknh:gui/dark_mode/itemSlot"
+    }
   }
 }

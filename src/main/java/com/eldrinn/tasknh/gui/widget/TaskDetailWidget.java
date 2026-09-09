@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 
+import com.cleanroommc.modularui.api.IThemeApi;
 import com.cleanroommc.modularui.drawable.GuiTextures;
 import com.cleanroommc.modularui.drawable.UITexture;
 import com.cleanroommc.modularui.utils.Alignment;
@@ -229,14 +230,12 @@ public class TaskDetailWidget extends Flow {
         for (int i = 0; i < statuses.length; i++) {
             TaskStatus status = statuses[i];
             int btnW = (i == statuses.length - 1) ? STATUS_LAST_W : STATUS_BTN_W;
-            var normalLabel = new TextWidget<>(status.displayName());
+            var normalLabel = new ThemedToggleLabel(status.displayName(), false);
             normalLabel.size(btnW, EL_H);
             normalLabel.textAlign(Alignment.Center);
-            normalLabel.color(ColorUtils.textWhite.getColor());
-            var activeLabel = new TextWidget<>(status.displayName());
+            var activeLabel = new ThemedToggleLabel(status.displayName(), true);
             activeLabel.size(btnW, EL_H);
             activeLabel.textAlign(Alignment.Center);
-            activeLabel.color(ColorUtils.textWhite.getColor());
             statusRow.child(
                 new ToggleButton().size(btnW, EL_H)
                     .value(new BoolValue.Dynamic(() -> task.status == status, selected -> {
@@ -494,7 +493,7 @@ public class TaskDetailWidget extends Flow {
         var posLabel = new TextWidget<>(t("tasknh.gui.detail.pos"));
         posLabel.size(actualPosW, EL_H);
         posLabel.textAlign(Alignment.Center);
-        posLabel.color(ColorUtils.textWhite.getColor());
+        posLabel.widgetTheme(IThemeApi.BUTTON);
         row.child(
             new ButtonWidget<>().size(actualPosW, EL_H)
                 .child(posLabel)

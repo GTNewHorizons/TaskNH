@@ -259,13 +259,8 @@ public class TaskListWidget extends Flow {
     }
 
     private static ToggleButton tabButton(String label, TaskStatus status, TaskNHGuiData data, int width) {
-        var normalLabel = new TextWidget<>(label);
-        normalLabel.size(width, 24);
-        normalLabel.textAlign(Alignment.Center);
-
-        var activeLabel = new TextWidget<>(label);
-        activeLabel.size(width, 24);
-        activeLabel.textAlign(Alignment.Center);
+        var normalLabel = tabLabelWidget(label, width, false);
+        var activeLabel = tabLabelWidget(label, width, true);
 
         return new ToggleButton().size(width, 24)
             .value(new BoolValue.Dynamic(() -> data.activeTab == status, selected -> {
@@ -277,5 +272,12 @@ public class TaskListWidget extends Flow {
             }))
             .child(false, normalLabel)
             .child(true, activeLabel);
+    }
+
+    private static TextWidget<?> tabLabelWidget(String label, int width, boolean selected) {
+        TextWidget<?> widget = new ThemedToggleLabel(label, selected);
+        widget.size(width, 24);
+        widget.textAlign(Alignment.Center);
+        return widget;
     }
 }
