@@ -20,7 +20,6 @@ import com.eldrinn.tasknh.data.ChecklistItem;
 import com.eldrinn.tasknh.data.Task;
 import com.eldrinn.tasknh.data.TaskStatus;
 import com.eldrinn.tasknh.gui.ColorUtils;
-import com.eldrinn.tasknh.gui.widget.IconSlotWidget;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.relauncher.Side;
@@ -110,7 +109,7 @@ public class HudRenderer {
         fr.drawStringWithShadow(statusText, x, y, statusColor(task.status));
         y += LINE_H;
 
-        ItemStack iconStack = IconSlotWidget.parseIconItem(task.iconItem);
+        ItemStack iconStack = task.iconItem;
         if (iconStack != null) {
             drawItemIcon(iconStack, x, y);
             for (String line : fr.listFormattedStringToWidth(task.title, textW - ICON_SIZE - ICON_GAP)) {

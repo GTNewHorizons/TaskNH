@@ -172,7 +172,7 @@ public class TaskRowWidget extends Flow {
     private static final int HEAD_GAP = 2;
 
     private static Flow buildRowContent(Task task, int SELECT_BTN_W, int CONTENT_W) {
-        ItemStack stack = IconSlotWidget.parseIconItem(task.iconItem);
+        ItemStack stack = task.iconItem;
         Flow row = Flow.row()
             .size(SELECT_BTN_W, 20);
         int used = 0;

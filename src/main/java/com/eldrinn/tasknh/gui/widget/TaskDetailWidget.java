@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
 
 import com.cleanroommc.modularui.drawable.GuiTextures;
 import com.cleanroommc.modularui.drawable.UITexture;
@@ -119,12 +120,12 @@ public class TaskDetailWidget extends Flow {
         header.child(new IconSlotWidget(new IconSlotWidget.ItemHolder() {
 
             @Override
-            public String get() {
+            public ItemStack get() {
                 return task.iconItem;
             }
 
             @Override
-            public void set(String v) {
+            public void set(ItemStack v) {
                 task.iconItem = v;
             }
         }, () -> {
@@ -262,12 +263,12 @@ public class TaskDetailWidget extends Flow {
         trackRow.child(new IconSlotWidget(new IconSlotWidget.ItemHolder() {
 
             @Override
-            public String get() {
+            public ItemStack get() {
                 return task.trackItem;
             }
 
             @Override
-            public void set(String v) {
+            public void set(ItemStack v) {
                 task.trackItem = v;
             }
 

@@ -11,7 +11,6 @@ import java.util.UUID;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.ICrafting;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ChatComponentTranslation;
@@ -96,7 +95,7 @@ public class ItemTrackHandler {
         boolean anyCompleted = false;
         for (Task task : new ArrayList<>(data.getTeamTasks(team.getTeamId()))) {
             if (task.status == TaskStatus.DONE) continue;
-            if (task.trackItem == null || task.trackItem.isEmpty()) continue;
+            if (task.trackItem == null) continue;
             if (countItem(player, task.trackItem) < Math.max(1, task.trackItemCount)) continue;
 
             task.status = TaskStatus.DONE;
@@ -124,26 +123,27 @@ public class ItemTrackHandler {
         }
     }
 
-    /**
-     * Counts the tracked item across one player's main inventory.
-     * Matches item id and meta only — no NBT, no OreDictionary.
-     */
-    private static int countItem(EntityPlayerMP player, String trackItem) {
-        String[] parts = trackItem.split(":");
-        if (parts.length < 3) return 0;
-        Item item = (Item) Item.itemRegistry.getObject(parts[0] + ":" + parts[1]);
-        if (item == null) return 0;
-        int meta;
-        try {
-            meta = Integer.parseInt(parts[2]);
-        } catch (NumberFormatException e) {
-            return 0;
-        }
+    /** Counts the tracked item across one player's main inventory. No OreDictionary. */
+    private static int countItem(EntityPlayerMP player, ItemStack trackItem) {
+        // Reading the name costs a registry lookup for a seed, so the tracked one is read once.
+        String trackedName = trackItem.getUnlocalizedName();
         int found = 0;
         for (ItemStack stack : player.inventory.mainInventory) {
-            if (stack != null && stack.getItem() == item && stack.getItemDamage() == meta) found += stack.stackSize;
+            if (stack != null && matches(stack, trackItem, trackedName)) found += stack.stackSize;
         }
         return found;
+    }
+
+    /**
+     * Item, meta and the stack's own unlocalized name must match. A mod overrides that name when one item
+     * carries several different things, so CropsNH seeds of different plants count apart while the growth
+     * values they each carry are ignored. A seed nobody analyzed yet is named after no plant, so it stays
+     * out of a task asking for a specific one until someone scans it.
+     */
+    private static boolean matches(ItemStack candidate, ItemStack tracked, String trackedName) {
+        return candidate.getItem() == tracked.getItem() && candidate.getItemDamage() == tracked.getItemDamage()
+            && candidate.getUnlocalizedName()
+                .equals(trackedName);
     }
 
     /** Marks a player for checking whenever their main inventory changes. */

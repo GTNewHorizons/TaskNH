@@ -14,12 +14,21 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.JsonToNBT;
+import net.minecraft.nbt.NBTBase;
+import net.minecraft.nbt.NBTException;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ChatComponentTranslation;
+import net.minecraftforge.common.util.Constants;
 
 import com.eldrinn.tasknh.data.AssignedPlayer;
 import com.eldrinn.tasknh.data.Task;
@@ -271,8 +280,9 @@ public class TaskNHCommand extends CommandBase {
                     obj.addProperty("title", t.title);
                     obj.addProperty("description", t.description);
                     obj.addProperty("status", t.status.name());
-                    if (t.iconItem != null) obj.addProperty("iconItem", t.iconItem);
-                    if (t.trackItem != null) obj.addProperty("trackItem", t.trackItem);
+                    // Written as NBT so items that differ only by tag survive a round trip.
+                    if (t.iconItem != null) obj.addProperty("iconStack", stackToJson(t.iconItem));
+                    if (t.trackItem != null) obj.addProperty("trackStack", stackToJson(t.trackItem));
                     if (t.trackItemCount > 1) obj.addProperty("trackItemCount", t.trackItemCount);
                     obj.addProperty("showOnMap", t.showOnMap);
                     if (t.location != null) {
@@ -379,10 +389,25 @@ public class TaskNHCommand extends CommandBase {
                             TaskStatus.valueOf(
                                 obj.get("status")
                                     .getAsString()));
-                        if (obj.has("iconItem")) t.iconItem = obj.get("iconItem")
-                            .getAsString();
-                        if (obj.has("trackItem")) t.trackItem = obj.get("trackItem")
-                            .getAsString();
+                        // "iconItem" and "trackItem" hold the pre-NBT "modid:item:meta" string, still accepted.
+                        if (obj.has("iconStack")) {
+                            t.iconItem = stackFromJson(
+                                obj.get("iconStack")
+                                    .getAsString());
+                        } else if (obj.has("iconItem")) {
+                            t.iconItem = Task.parseLegacyItem(
+                                obj.get("iconItem")
+                                    .getAsString());
+                        }
+                        if (obj.has("trackStack")) {
+                            t.trackItem = stackFromJson(
+                                obj.get("trackStack")
+                                    .getAsString());
+                        } else if (obj.has("trackItem")) {
+                            t.trackItem = Task.parseLegacyItem(
+                                obj.get("trackItem")
+                                    .getAsString());
+                        }
                         if (obj.has("trackItemCount")) t.trackItemCount = Task.clampTrackItemCount(
                             obj.get("trackItemCount")
                                 .getAsInt());
@@ -486,5 +511,36 @@ public class TaskNHCommand extends CommandBase {
         }
         sender.addChatMessage(new ChatComponentTranslation("tasknh.cmd.task_not_found", shortId));
         return null;
+    }
+
+    /**
+     * An item as its NBT text, the form the export writes and a person can still read and edit.
+     * The item id goes out as its registry name: the numbers a stack carries are handed out per world,
+     * so an export moved to another instance would otherwise name a different item.
+     */
+    private static String stackToJson(ItemStack stack) {
+        NBTTagCompound tag = stack.writeToNBT(new NBTTagCompound());
+        tag.setString("id", String.valueOf(Item.itemRegistry.getNameForObject(stack.getItem())));
+        return tag.toString();
+    }
+
+    /** Reads back what {@link #stackToJson} wrote. Returns null for text that is not valid item NBT. */
+    @Nullable
+    private static ItemStack stackFromJson(String value) {
+        try {
+            NBTBase tag = JsonToNBT.func_150315_a(value);
+            if (!(tag instanceof NBTTagCompound compound)) return null;
+            // An export written before the registry name went in still holds the world's own number.
+            if (compound.hasKey("id", Constants.NBT.TAG_STRING)) {
+                Item item = (Item) Item.itemRegistry.getObject(compound.getString("id"));
+                if (item == null) return null;
+                compound.setShort("id", (short) Item.getIdFromItem(item));
+            }
+            return ItemStack.loadItemStackFromNBT(compound);
+            // JsonToNBT walks the text by hand and throws plain runtime exceptions on malformed input,
+            // which would otherwise abort an import halfway through the file.
+        } catch (NBTException | RuntimeException e) {
+            return null;
+        }
     }
 }
