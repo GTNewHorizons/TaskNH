@@ -520,11 +520,7 @@ public class TaskNHCommand extends CommandBase {
      */
     private static String stackToJson(ItemStack stack) {
         NBTTagCompound tag = stack.writeToNBT(new NBTTagCompound());
-        tag.setString(
-            "id",
-            String.valueOf(
-                Item.itemRegistry.getNameForObject(
-                    stack.getItem())));
+        tag.setString("id", String.valueOf(Item.itemRegistry.getNameForObject(stack.getItem())));
         return tag.toString();
     }
 
