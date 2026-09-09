@@ -38,6 +38,8 @@ public class TaskDetailWidget extends Flow {
     private static final int ROW_H = 24;
     private static final int EL_H = 20;
     private static final int SCROLLBAR_W = 4;
+    /** Width of the tracked item count field. */
+    private static final int COUNT_FIELD_W = 44;
 
     private static final UITexture ICON_ADD = GuiTextures.ADD.withColorOverride(ColorUtils.iconAdd.getColor());
     private static final UITexture ICON_REMOVE = GuiTextures.REMOVE.withColorOverride(ColorUtils.iconRemove.getColor());
@@ -268,11 +270,64 @@ public class TaskDetailWidget extends Flow {
             public void set(String v) {
                 task.trackItem = v;
             }
+
+            @Override
+            public int getCount() {
+                return task.trackItemCount;
+            }
+
+            @Override
+            public void setCount(int count) {
+                task.trackItemCount = Task.clampTrackItemCount(count);
+            }
         }, () -> {
             sendUpdate();
             TaskNHGui.open(data);
-        }, "tasknh.gui.detail.track_item_hint").size(EL_H, EL_H));
+        }, "tasknh.gui.detail.track_item_hint").onMiddleClick(() -> {
+            // A count without a tracked item means nothing, so the field only opens on a filled slot.
+            if (task.trackItem == null) return;
+            data.trackCountExpanded = !data.trackCountExpanded;
+            TaskNHGui.open(data);
+        })
+            .size(EL_H, EL_H));
         formList.child(trackRow);
+
+        // Count field under the slot, opened by middle-clicking it and closed by Enter.
+        if (data.trackCountExpanded) {
+            Flow countRow = Flow.row()
+                .size(W, ROW_H);
+            var countLabel = new TextWidget<>(t("tasknh.gui.detail.track_item_count"));
+            countLabel.size(W - COUNT_FIELD_W, EL_H);
+            countLabel.textAlign(Alignment.CenterLeft);
+            countRow.child(countLabel);
+            PlainTextField countField = new PlainTextField();
+            countField.size(COUNT_FIELD_W, EL_H);
+            countField.setTextColor(ColorUtils.textWhite.getColor());
+            countField.setNumbers(1, Task.MAX_TRACK_ITEM_COUNT);
+            // Plain integers only: the field accepts expressions by default, and those would be
+            // dropped by the parse below instead of reaching the task.
+            countField.acceptsExpressions(false);
+            countField.value(new StringValue.Dynamic(() -> String.valueOf(task.trackItemCount), val -> {
+                try {
+                    task.trackItemCount = Task.clampTrackItemCount(Integer.parseInt(val.trim()));
+                    sendUpdate();
+                } catch (NumberFormatException ignored) {}
+            }));
+            countField.onEnter(() -> {
+                // Read the text here: rebuilding the GUI drops the field before it syncs on focus loss.
+                try {
+                    task.trackItemCount = Task.clampTrackItemCount(
+                        Integer.parseInt(
+                            countField.getText()
+                                .trim()));
+                    sendUpdate();
+                } catch (NumberFormatException ignored) {}
+                data.trackCountExpanded = false;
+                TaskNHGui.open(data);
+            });
+            countRow.child(countField);
+            formList.child(countRow);
+        }
 
         // Assignees
         var assigneesLabel = new TextWidget<>(t("tasknh.gui.detail.assignees"));

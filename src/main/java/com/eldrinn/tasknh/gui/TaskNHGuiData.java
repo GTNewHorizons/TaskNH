@@ -33,6 +33,9 @@ public class TaskNHGuiData {
     /** Whether the search field is expanded. */
     public boolean searchExpanded = false;
 
+    /** Whether the tracked item count field is shown under the slot. Toggled by middle-clicking the slot. */
+    public boolean trackCountExpanded = false;
+
     /**
      * Parent tasks whose done subtasks are shown in the list. Static so the choice survives closing
      * the GUI, which builds a new instance every time. Cleared of unknown ids on every sync,
@@ -52,17 +55,20 @@ public class TaskNHGuiData {
         this.selectedTaskId = id;
         this.createMode = false;
         this.detailScroll.reset();
+        this.trackCountExpanded = false;
     }
 
     public void enterCreateMode() {
         this.selectedTaskId = null;
         this.createMode = true;
         this.detailScroll.reset();
+        this.trackCountExpanded = false;
     }
 
     public void clear() {
         this.selectedTaskId = null;
         this.createMode = false;
         this.detailScroll.reset();
+        this.trackCountExpanded = false;
     }
 }

@@ -25,6 +25,14 @@ public class Task {
     public String iconItem; // format: "modid:itemname:meta", e.g. "minecraft:diamond:0"
     @Nullable
     public String trackItem; // same format as iconItem; task auto-completes once seen in a member's inventory
+    /**
+     * Upper bound for {@link #trackItemCount}, enforced wherever the count is set.
+     * A main inventory holds 36 slots of at most 64, so a larger count could never be reached.
+     * Items that stack lower than 64 top out below this.
+     */
+    public static final int MAX_TRACK_ITEM_COUNT = 36 * 64;
+    /** How many of trackItem one member has to carry. Set from the stack size dragged out of NEI. */
+    public int trackItemCount = 1;
     public boolean showOnMap = false;
     /** Parent task id, or null for a root task. Only one nesting level is allowed. */
     @Nullable
@@ -45,6 +53,11 @@ public class Task {
         this.comments = new ArrayList<>();
     }
 
+    /** Holds a count inside the range {@link #readFromBuf} accepts. Every path that sets one goes through here. */
+    public static int clampTrackItemCount(int count) {
+        return Math.min(MAX_TRACK_ITEM_COUNT, Math.max(1, count));
+    }
+
     public NBTTagCompound toNBT() {
         NBTTagCompound tag = new NBTTagCompound();
         tag.setLong("idMost", id.getMostSignificantBits());
@@ -62,6 +75,7 @@ public class Task {
 
         if (iconItem != null) tag.setString("iconItem", iconItem);
         if (trackItem != null) tag.setString("trackItem", trackItem);
+        if (trackItemCount > 1) tag.setInteger("trackItemCount", trackItemCount);
         tag.setBoolean("showOnMap", showOnMap);
         tag.setInteger("order", order);
         if (parentId != null) {
@@ -98,6 +112,9 @@ public class Task {
 
         if (tag.hasKey("iconItem")) task.iconItem = tag.getString("iconItem");
         if (tag.hasKey("trackItem")) task.trackItem = tag.getString("trackItem");
+        // Tasks saved before the count existed track a single item. A save edited by hand can hold
+        // anything, and an out of range count would later fail to decode on the client, so clamp on load.
+        task.trackItemCount = tag.hasKey("trackItemCount") ? clampTrackItemCount(tag.getInteger("trackItemCount")) : 1;
         task.showOnMap = tag.getBoolean("showOnMap");
         // Worlds saved before manual ordering have no key, so everything starts at 0 and keeps its old order.
         task.order = tag.getInteger("order");
@@ -135,6 +152,7 @@ public class Task {
 
         buf.writeStringToBuffer(iconItem != null ? iconItem : "");
         buf.writeStringToBuffer(trackItem != null ? trackItem : "");
+        buf.writeInt(trackItemCount);
         buf.writeBoolean(showOnMap);
         buf.writeInt(order);
         buf.writeBoolean(parentId != null);
@@ -175,6 +193,10 @@ public class Task {
         task.iconItem = icon.isEmpty() ? null : icon;
         String track = buf.readStringFromBuffer(256);
         task.trackItem = track.isEmpty() ? null : track;
+        int trackCount = buf.readInt();
+        if (trackCount < 1 || trackCount > MAX_TRACK_ITEM_COUNT)
+            throw new IOException("Invalid track item count: " + trackCount);
+        task.trackItemCount = trackCount;
         task.showOnMap = buf.readBoolean();
         task.order = buf.readInt();
         if (buf.readBoolean()) {

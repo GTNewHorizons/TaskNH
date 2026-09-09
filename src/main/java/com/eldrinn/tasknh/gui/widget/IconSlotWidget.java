@@ -22,8 +22,8 @@ import cpw.mods.fml.relauncher.SideOnly;
 
 /**
  * A ghost slot for setting a task icon via NEI drag-and-drop.
- * Right-click clears the icon. With NEI installed, left-click opens the item's recipes and
- * the R and U hotkeys work over the slot.
+ * Right-click clears the icon, middle-click reaches the slot's own handler where there is one.
+ * With NEI installed, left-click opens the item's recipes and the R and U hotkeys work over the slot.
  */
 @SideOnly(Side.CLIENT)
 public class IconSlotWidget extends Widget<IconSlotWidget>
@@ -31,12 +31,20 @@ public class IconSlotWidget extends Widget<IconSlotWidget>
 
     private final ItemHolder iconHolder;
     private final Runnable onChanged;
+    private Runnable onMiddleClick;
 
     public interface ItemHolder {
 
         String get();
 
         void set(String iconItem);
+
+        /** Stack size the slot stands for. A slot that only holds an icon keeps the default. */
+        default int getCount() {
+            return 1;
+        }
+
+        default void setCount(int count) {}
     }
 
     public IconSlotWidget(ItemHolder iconHolder, Runnable onChanged) {
@@ -49,9 +57,17 @@ public class IconSlotWidget extends Widget<IconSlotWidget>
         addTooltipLine(IKey.lang(tooltipKey));
     }
 
+    /** Runs on middle click, for slots that let the player edit the count by hand. */
+    public IconSlotWidget onMiddleClick(Runnable action) {
+        this.onMiddleClick = action;
+        return this;
+    }
+
     @Override
     public boolean handleDragAndDrop(@NotNull ItemStack draggedStack, int button) {
         iconHolder.set(Item.itemRegistry.getNameForObject(draggedStack.getItem()) + ":" + draggedStack.getItemDamage());
+        // NEI hands over the stack size from its own quantity field, see PanelWidget#getDraggedStackWithQuantity.
+        iconHolder.setCount(Math.max(1, draggedStack.stackSize));
         onChanged.run();
         return true;
     }
@@ -63,7 +79,14 @@ public class IconSlotWidget extends Widget<IconSlotWidget>
             // when it loses focus, so drop the focus first or the edit in progress is lost.
             getContext().removeFocus();
             iconHolder.set(null);
+            iconHolder.setCount(1);
             onChanged.run();
+            return Interactable.Result.SUCCESS;
+        }
+        if (button == 2 && this.onMiddleClick != null) {
+            // Opening the count field rebuilds the GUI, which drops a text field before it commits.
+            getContext().removeFocus();
+            this.onMiddleClick.run();
             return Interactable.Result.SUCCESS;
         }
         if (button == 0 && NEIRecipeIntegration.isAvailable()) {
@@ -110,6 +133,10 @@ public class IconSlotWidget extends Widget<IconSlotWidget>
             getArea().width - 2 * pad,
             getArea().height - 2 * pad,
             context.getCurrentDrawingZ());
+
+        // GuiDraw.drawItem skips the vanilla item overlay, so the count is drawn separately. The helper
+        // scales the text down when it would not fit, which a four digit count does not.
+        GuiDraw.drawStandardSlotAmountText(iconHolder.getCount(), null, getArea());
     }
 
     public static ItemStack parseIconItem(String iconItem) {

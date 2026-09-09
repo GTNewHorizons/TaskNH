@@ -97,7 +97,7 @@ public class ItemTrackHandler {
         for (Task task : new ArrayList<>(data.getTeamTasks(team.getTeamId()))) {
             if (task.status == TaskStatus.DONE) continue;
             if (task.trackItem == null || task.trackItem.isEmpty()) continue;
-            if (!hasItem(player, task.trackItem)) continue;
+            if (countItem(player, task.trackItem) < Math.max(1, task.trackItemCount)) continue;
 
             task.status = TaskStatus.DONE;
             data.updateTask(team.getTeamId(), task);
@@ -124,22 +124,26 @@ public class ItemTrackHandler {
         }
     }
 
-    /** Matches item id and meta only — no NBT, no stack size, no OreDictionary. */
-    private static boolean hasItem(EntityPlayerMP player, String trackItem) {
+    /**
+     * Counts the tracked item across one player's main inventory.
+     * Matches item id and meta only — no NBT, no OreDictionary.
+     */
+    private static int countItem(EntityPlayerMP player, String trackItem) {
         String[] parts = trackItem.split(":");
-        if (parts.length < 3) return false;
+        if (parts.length < 3) return 0;
         Item item = (Item) Item.itemRegistry.getObject(parts[0] + ":" + parts[1]);
-        if (item == null) return false;
+        if (item == null) return 0;
         int meta;
         try {
             meta = Integer.parseInt(parts[2]);
         } catch (NumberFormatException e) {
-            return false;
+            return 0;
         }
+        int found = 0;
         for (ItemStack stack : player.inventory.mainInventory) {
-            if (stack != null && stack.getItem() == item && stack.getItemDamage() == meta) return true;
+            if (stack != null && stack.getItem() == item && stack.getItemDamage() == meta) found += stack.stackSize;
         }
-        return false;
+        return found;
     }
 
     /** Marks a player for checking whenever their main inventory changes. */
