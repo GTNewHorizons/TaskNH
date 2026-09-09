@@ -65,6 +65,16 @@ public class Task {
         return Math.min(MAX_TRACK_ITEM_COUNT, Math.max(1, count));
     }
 
+    /**
+     * Reads one stack off the wire. An id no registry knows builds a stack with no item behind it,
+     * which would throw the first time anything draws or names it, so that reads as no item at all.
+     */
+    @Nullable
+    private static ItemStack readStack(PacketBuffer buf) throws IOException {
+        ItemStack stack = buf.readItemStackFromBuffer();
+        return stack != null && stack.getItem() != null ? stack : null;
+    }
+
     /** Reads the "modid:item:meta" string tasks used before items were stored as stacks. */
     @Nullable
     public static ItemStack parseLegacyItem(String value) {
@@ -215,8 +225,8 @@ public class Task {
             task.location = TaskLocation.readFromBuf(buf);
         }
 
-        task.iconItem = buf.readItemStackFromBuffer();
-        task.trackItem = buf.readItemStackFromBuffer();
+        task.iconItem = readStack(buf);
+        task.trackItem = readStack(buf);
         int trackCount = buf.readInt();
         if (trackCount < 1 || trackCount > MAX_TRACK_ITEM_COUNT)
             throw new IOException("Invalid track item count: " + trackCount);

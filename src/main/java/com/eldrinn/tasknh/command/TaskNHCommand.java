@@ -19,6 +19,7 @@ import javax.annotation.Nullable;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.JsonToNBT;
 import net.minecraft.nbt.NBTBase;
@@ -27,6 +28,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ChatComponentTranslation;
+import net.minecraftforge.common.util.Constants;
 
 import com.eldrinn.tasknh.data.AssignedPlayer;
 import com.eldrinn.tasknh.data.Task;
@@ -511,10 +513,19 @@ public class TaskNHCommand extends CommandBase {
         return null;
     }
 
-    /** An item as its NBT text, the form the export writes and a person can still read and edit. */
+    /**
+     * An item as its NBT text, the form the export writes and a person can still read and edit.
+     * The item id goes out as its registry name: the numbers a stack carries are handed out per world,
+     * so an export moved to another instance would otherwise name a different item.
+     */
     private static String stackToJson(ItemStack stack) {
-        return stack.writeToNBT(new NBTTagCompound())
-            .toString();
+        NBTTagCompound tag = stack.writeToNBT(new NBTTagCompound());
+        tag.setString(
+            "id",
+            String.valueOf(
+                Item.itemRegistry.getNameForObject(
+                    stack.getItem())));
+        return tag.toString();
     }
 
     /** Reads back what {@link #stackToJson} wrote. Returns null for text that is not valid item NBT. */
@@ -523,8 +534,16 @@ public class TaskNHCommand extends CommandBase {
         try {
             NBTBase tag = JsonToNBT.func_150315_a(value);
             if (!(tag instanceof NBTTagCompound compound)) return null;
+            // An export written before the registry name went in still holds the world's own number.
+            if (compound.hasKey("id", Constants.NBT.TAG_STRING)) {
+                Item item = (Item) Item.itemRegistry.getObject(compound.getString("id"));
+                if (item == null) return null;
+                compound.setShort("id", (short) Item.getIdFromItem(item));
+            }
             return ItemStack.loadItemStackFromNBT(compound);
-        } catch (NBTException e) {
+            // JsonToNBT walks the text by hand and throws plain runtime exceptions on malformed input,
+            // which would otherwise abort an import halfway through the file.
+        } catch (NBTException | RuntimeException e) {
             return null;
         }
     }

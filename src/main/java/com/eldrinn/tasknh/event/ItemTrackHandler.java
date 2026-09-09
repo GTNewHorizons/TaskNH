@@ -125,9 +125,11 @@ public class ItemTrackHandler {
 
     /** Counts the tracked item across one player's main inventory. No OreDictionary. */
     private static int countItem(EntityPlayerMP player, ItemStack trackItem) {
+        // Reading the name costs a registry lookup for a seed, so the tracked one is read once.
+        String trackedName = trackItem.getUnlocalizedName();
         int found = 0;
         for (ItemStack stack : player.inventory.mainInventory) {
-            if (stack != null && matches(stack, trackItem)) found += stack.stackSize;
+            if (stack != null && matches(stack, trackItem, trackedName)) found += stack.stackSize;
         }
         return found;
     }
@@ -138,10 +140,10 @@ public class ItemTrackHandler {
      * values they each carry are ignored. A seed nobody analyzed yet is named after no plant, so it stays
      * out of a task asking for a specific one until someone scans it.
      */
-    private static boolean matches(ItemStack candidate, ItemStack tracked) {
+    private static boolean matches(ItemStack candidate, ItemStack tracked, String trackedName) {
         return candidate.getItem() == tracked.getItem() && candidate.getItemDamage() == tracked.getItemDamage()
             && candidate.getUnlocalizedName()
-                .equals(tracked.getUnlocalizedName());
+                .equals(trackedName);
     }
 
     /** Marks a player for checking whenever their main inventory changes. */
