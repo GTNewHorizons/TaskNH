@@ -278,12 +278,14 @@ public class TaskDetailWidget extends Flow {
 
             @Override
             public void setCount(int count) {
-                task.trackItemCount = clampCount(count);
+                task.trackItemCount = Task.clampTrackItemCount(count);
             }
         }, () -> {
             sendUpdate();
             TaskNHGui.open(data);
         }, "tasknh.gui.detail.track_item_hint").onMiddleClick(() -> {
+            // A count without a tracked item means nothing, so the field only opens on a filled slot.
+            if (task.trackItem == null) return;
             data.trackCountExpanded = !data.trackCountExpanded;
             TaskNHGui.open(data);
         })
@@ -302,16 +304,19 @@ public class TaskDetailWidget extends Flow {
             countField.size(COUNT_FIELD_W, EL_H);
             countField.setTextColor(ColorUtils.textWhite.getColor());
             countField.setNumbers(1, Task.MAX_TRACK_ITEM_COUNT);
+            // Plain integers only: the field accepts expressions by default, and those would be
+            // dropped by the parse below instead of reaching the task.
+            countField.acceptsExpressions(false);
             countField.value(new StringValue.Dynamic(() -> String.valueOf(task.trackItemCount), val -> {
                 try {
-                    task.trackItemCount = clampCount(Integer.parseInt(val.trim()));
+                    task.trackItemCount = Task.clampTrackItemCount(Integer.parseInt(val.trim()));
                     sendUpdate();
                 } catch (NumberFormatException ignored) {}
             }));
             countField.onEnter(() -> {
                 // Read the text here: rebuilding the GUI drops the field before it syncs on focus loss.
                 try {
-                    task.trackItemCount = clampCount(
+                    task.trackItemCount = Task.clampTrackItemCount(
                         Integer.parseInt(
                             countField.getText()
                                 .trim()));
@@ -661,11 +666,6 @@ public class TaskDetailWidget extends Flow {
             task.location = new TaskLocation(0, 0, 0, 0, "");
         }
         return task.location;
-    }
-
-    /** Keeps the tracked item count inside the range the task packet accepts. */
-    private static int clampCount(int count) {
-        return Math.min(Task.MAX_TRACK_ITEM_COUNT, Math.max(1, count));
     }
 
     private static String t(String key) {

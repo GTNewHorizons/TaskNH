@@ -383,12 +383,9 @@ public class TaskNHCommand extends CommandBase {
                             .getAsString();
                         if (obj.has("trackItem")) t.trackItem = obj.get("trackItem")
                             .getAsString();
-                        if (obj.has("trackItemCount")) t.trackItemCount = Math.min(
-                            Task.MAX_TRACK_ITEM_COUNT,
-                            Math.max(
-                                1,
-                                obj.get("trackItemCount")
-                                    .getAsInt()));
+                        if (obj.has("trackItemCount")) t.trackItemCount = Task.clampTrackItemCount(
+                            obj.get("trackItemCount")
+                                .getAsInt());
                         if (obj.has("showOnMap")) t.showOnMap = obj.get("showOnMap")
                             .getAsBoolean();
                         if (obj.has("location")) {

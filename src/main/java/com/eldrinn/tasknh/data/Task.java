@@ -51,6 +51,11 @@ public class Task {
         this.comments = new ArrayList<>();
     }
 
+    /** Holds a count inside the range {@link #readFromBuf} accepts. Every path that sets one goes through here. */
+    public static int clampTrackItemCount(int count) {
+        return Math.min(MAX_TRACK_ITEM_COUNT, Math.max(1, count));
+    }
+
     public NBTTagCompound toNBT() {
         NBTTagCompound tag = new NBTTagCompound();
         tag.setLong("idMost", id.getMostSignificantBits());
@@ -104,8 +109,9 @@ public class Task {
 
         if (tag.hasKey("iconItem")) task.iconItem = tag.getString("iconItem");
         if (tag.hasKey("trackItem")) task.trackItem = tag.getString("trackItem");
-        // Tasks saved before the count existed track a single item.
-        task.trackItemCount = tag.hasKey("trackItemCount") ? tag.getInteger("trackItemCount") : 1;
+        // Tasks saved before the count existed track a single item. A save edited by hand can hold
+        // anything, and an out of range count would later fail to decode on the client, so clamp on load.
+        task.trackItemCount = tag.hasKey("trackItemCount") ? clampTrackItemCount(tag.getInteger("trackItemCount")) : 1;
         task.showOnMap = tag.getBoolean("showOnMap");
         if (tag.hasKey("parentMost")) {
             task.parentId = new UUID(tag.getLong("parentMost"), tag.getLong("parentLeast"));

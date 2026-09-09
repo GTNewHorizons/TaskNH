@@ -46,17 +46,20 @@ public class TaskNHGuiData {
         this.selectedTaskId = id;
         this.createMode = false;
         this.detailScroll.reset();
+        this.trackCountExpanded = false;
     }
 
     public void enterCreateMode() {
         this.selectedTaskId = null;
         this.createMode = true;
         this.detailScroll.reset();
+        this.trackCountExpanded = false;
     }
 
     public void clear() {
         this.selectedTaskId = null;
         this.createMode = false;
         this.detailScroll.reset();
+        this.trackCountExpanded = false;
     }
 }

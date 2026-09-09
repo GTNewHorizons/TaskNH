@@ -112,17 +112,9 @@ public class IconSlotWidget extends Widget<IconSlotWidget>
             getArea().height - 2 * pad,
             context.getCurrentDrawingZ());
 
-        int count = iconHolder.getCount();
-        if (count > 1) {
-            // GuiDraw.drawItem skips the vanilla item overlay, so the count is drawn here.
-            net.minecraft.client.gui.FontRenderer font = net.minecraft.client.Minecraft.getMinecraft().fontRenderer;
-            String text = String.valueOf(count);
-            font.drawStringWithShadow(
-                text,
-                getArea().width - pad - font.getStringWidth(text),
-                getArea().height - pad - font.FONT_HEIGHT,
-                ColorUtils.textWhite.getColor());
-        }
+        // GuiDraw.drawItem skips the vanilla item overlay, so the count is drawn separately. The helper
+        // scales the text down when it would not fit, which a four digit count does not.
+        GuiDraw.drawStandardSlotAmountText(iconHolder.getCount(), null, getArea());
     }
 
     public static ItemStack parseIconItem(String iconItem) {
