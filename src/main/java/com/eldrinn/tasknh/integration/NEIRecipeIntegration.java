@@ -2,8 +2,9 @@ package com.eldrinn.tasknh.integration;
 
 import net.minecraft.item.ItemStack;
 
+import com.cleanroommc.modularui.ModularUI;
+
 import codechicken.nei.recipe.GuiCraftingRecipe;
-import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -15,17 +16,14 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public final class NEIRecipeIntegration {
 
-    private static Boolean available;
-
     private NEIRecipeIntegration() {}
 
     public static boolean isAvailable() {
-        if (available == null) available = Loader.isModLoaded("NotEnoughItems");
-        return available;
+        return ModularUI.Mods.NEI.isLoaded();
     }
 
-    /** Shows the recipes that produce the given stack. */
-    public static void showRecipes(ItemStack stack) {
-        GuiCraftingRecipe.openRecipeGui("item", stack);
+    /** Shows the recipes that produce the given stack. Returns false when the item has none. */
+    public static boolean showRecipes(ItemStack stack) {
+        return GuiCraftingRecipe.openRecipeGui("item", stack);
     }
 }

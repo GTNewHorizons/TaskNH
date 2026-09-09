@@ -22,7 +22,8 @@ import cpw.mods.fml.relauncher.SideOnly;
 
 /**
  * A ghost slot for setting a task icon via NEI drag-and-drop.
- * Right-click clears the icon, left-click opens the item's recipes in NEI.
+ * Right-click clears the icon. With NEI installed, left-click opens the item's recipes and
+ * the R and U hotkeys work over the slot.
  */
 @SideOnly(Side.CLIENT)
 public class IconSlotWidget extends Widget<IconSlotWidget>
@@ -58,6 +59,9 @@ public class IconSlotWidget extends Widget<IconSlotWidget>
     @Override
     public @NotNull Interactable.Result onMousePressed(int button) {
         if (button == 1) {
+            // Both branches rebuild or replace the screen, and a text field only commits its value
+            // when it loses focus, so drop the focus first or the edit in progress is lost.
+            getContext().removeFocus();
             iconHolder.set(null);
             onChanged.run();
             return Interactable.Result.SUCCESS;
@@ -65,8 +69,9 @@ public class IconSlotWidget extends Widget<IconSlotWidget>
         if (button == 0 && NEIRecipeIntegration.isAvailable()) {
             ItemStack stack = parseIconItem(iconHolder.get());
             if (stack != null) {
-                NEIRecipeIntegration.showRecipes(stack);
-                return Interactable.Result.SUCCESS;
+                getContext().removeFocus();
+                // An item with no recipes leaves the screen as it is, so the click stays unhandled.
+                if (NEIRecipeIntegration.showRecipes(stack)) return Interactable.Result.SUCCESS;
             }
         }
         return Interactable.Result.IGNORE;
