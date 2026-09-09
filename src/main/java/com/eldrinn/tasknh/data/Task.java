@@ -29,6 +29,8 @@ public class Task {
     /** Parent task id, or null for a root task. Only one nesting level is allowed. */
     @Nullable
     public UUID parentId;
+    /** Manual sort position among siblings, shared by the whole team. Lower comes first. */
+    public int order;
     public final List<ChecklistItem> checklist;
     public final List<Comment> comments; // soft limit enforced on add: max 50
 
@@ -61,6 +63,7 @@ public class Task {
         if (iconItem != null) tag.setString("iconItem", iconItem);
         if (trackItem != null) tag.setString("trackItem", trackItem);
         tag.setBoolean("showOnMap", showOnMap);
+        tag.setInteger("order", order);
         if (parentId != null) {
             tag.setLong("parentMost", parentId.getMostSignificantBits());
             tag.setLong("parentLeast", parentId.getLeastSignificantBits());
@@ -96,6 +99,8 @@ public class Task {
         if (tag.hasKey("iconItem")) task.iconItem = tag.getString("iconItem");
         if (tag.hasKey("trackItem")) task.trackItem = tag.getString("trackItem");
         task.showOnMap = tag.getBoolean("showOnMap");
+        // Worlds saved before manual ordering have no key, so everything starts at 0 and keeps its old order.
+        task.order = tag.getInteger("order");
         if (tag.hasKey("parentMost")) {
             task.parentId = new UUID(tag.getLong("parentMost"), tag.getLong("parentLeast"));
         }
@@ -131,6 +136,7 @@ public class Task {
         buf.writeStringToBuffer(iconItem != null ? iconItem : "");
         buf.writeStringToBuffer(trackItem != null ? trackItem : "");
         buf.writeBoolean(showOnMap);
+        buf.writeInt(order);
         buf.writeBoolean(parentId != null);
         if (parentId != null) {
             buf.writeLong(parentId.getMostSignificantBits());
@@ -170,6 +176,7 @@ public class Task {
         String track = buf.readStringFromBuffer(256);
         task.trackItem = track.isEmpty() ? null : track;
         task.showOnMap = buf.readBoolean();
+        task.order = buf.readInt();
         if (buf.readBoolean()) {
             task.parentId = new UUID(buf.readLong(), buf.readLong());
         }
