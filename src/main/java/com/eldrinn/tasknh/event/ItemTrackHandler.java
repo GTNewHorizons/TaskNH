@@ -51,8 +51,11 @@ public class ItemTrackHandler {
             listener.player = player;
         }
         // A dimension change reuses the same player and container, so the listener may already be attached.
-        player.inventoryContainer.removeCraftingFromCrafters(listener);
-        player.inventoryContainer.addCraftingToCrafters(listener);
+        // Container.removeCraftingFromCrafters is client only, hence the container is remembered instead.
+        if (listener.attachedTo != player.inventoryContainer) {
+            player.inventoryContainer.addCraftingToCrafters(listener);
+            listener.attachedTo = player.inventoryContainer;
+        }
         // Check once on join: the item may have been obtained while offline or in another dimension.
         schedule(player);
     }
@@ -150,6 +153,7 @@ public class ItemTrackHandler {
     private static class InventoryListener implements ICrafting {
 
         private EntityPlayerMP player;
+        private Container attachedTo;
 
         private InventoryListener(EntityPlayerMP player) {
             this.player = player;
