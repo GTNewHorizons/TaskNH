@@ -35,6 +35,7 @@ public class ColorUtils {
         backgroundOverlay       = color.argb("backgroundOverlay",       "0x44000000"),
         backgroundPanel         = color.argb("backgroundPanel",         "0xCC000000"),
         backgroundButton        = color.argb("backgroundButton",        "0xFF444444"),
+        backgroundRowSelected   = color.argb("backgroundRowSelected",   "0xFF666666"),
         backgroundDanger        = color.argb("backgroundDanger",        "0xFF884444"),
         backgroundHandle        = color.argb("backgroundHandle",        "0xFFCC3333");
     // spotless:on

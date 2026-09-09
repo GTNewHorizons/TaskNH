@@ -29,6 +29,19 @@ public class ScrollMemoryList extends ListWidget<IWidget, ScrollMemoryList> {
             this.scroll = 0;
             this.size = 0;
         }
+
+        int getScroll() {
+            return this.scroll;
+        }
+
+        int getSize() {
+            return this.size;
+        }
+
+        void store(int scroll, int size) {
+            this.scroll = scroll;
+            this.size = size;
+        }
     }
 
     private final Memory memory;

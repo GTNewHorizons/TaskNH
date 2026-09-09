@@ -2,10 +2,14 @@ package com.eldrinn.tasknh.gui.widget;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 
 import net.minecraft.util.StatCollector;
 
+import org.jetbrains.annotations.Nullable;
+
+import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.drawable.GuiTextures;
 import com.cleanroommc.modularui.utils.Alignment;
@@ -21,6 +25,7 @@ import com.eldrinn.tasknh.data.TaskStatus;
 import com.eldrinn.tasknh.gui.ColorUtils;
 import com.eldrinn.tasknh.gui.TaskNHGui;
 import com.eldrinn.tasknh.gui.TaskNHGuiData;
+import com.eldrinn.tasknh.network.TaskNHNetwork;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -91,36 +96,76 @@ public class TaskListWidget extends Flow {
         child(searchRow);
 
         // Task list filtered by active tab and search query
-        ScrollMemoryList list = new ScrollMemoryList(data.listScroll, TaskRowWidget.SCROLLBAR_W);
+        SortableTaskList list = new SortableTaskList(data.listScroll, TaskRowWidget.SCROLLBAR_W);
         list.size(W, H - 24 - P - 20 - P - 28);
         list.marginTop(P);
         // Rows for the whole tab are built once; the search query only enables and disables them,
         // and the list collapses the disabled ones out of the layout. That keeps typing free of
         // rebuilds, which would take the search field's focus with them.
+        // Roots of the active tab in their manual order. An orphaned subtask (parent gone) would otherwise vanish,
+        // so it joins them and is shown as a root.
+        List<Task> roots = new ArrayList<>();
         for (Task task : allTasks) {
             if (task.status != data.activeTab) continue;
-            if (task.parentId == null) {
-                // Children follow their parent, indented. Nesting is one level deep. The list is
-                // taken once here rather than per tick, since any change to it rebuilds the rows.
-                List<Task> children = new ArrayList<>();
-                for (Task child : allTasks) {
-                    // A subtask stays under its parent whatever its status; only search filters it.
-                    if (task.id.equals(child.parentId)) children.add(child);
-                }
-                TaskRowWidget parentRow = new TaskRowWidget(task, data, false);
-                // A parent that doesn't match itself still shows while a child does, so the match
-                // isn't left without the task it belongs to.
-                parentRow.setEnabledIf(w -> matchesQuery(task, query(data)) || anyMatches(children, query(data)));
-                list.child(parentRow);
-                for (Task child : children) {
-                    TaskRowWidget row = new TaskRowWidget(child, data, true);
-                    row.setEnabledIf(w -> matchesQuery(child, query(data)));
-                    list.child(row);
-                }
-            } else if (TaskNHClientCache.get(task.parentId) == null) {
-                // Orphaned subtask (parent gone) would otherwise vanish, so show it as a root.
-                list.child(searchFiltered(new TaskRowWidget(task, data, false), data, task));
+            if (task.parentId == null || TaskNHClientCache.get(task.parentId) == null) roots.add(task);
+        }
+        roots.sort(ORDER);
+        for (Task task : roots) {
+            // Children follow their parent, indented. Nesting is one level deep. The list is
+            // taken once here rather than per tick, since any change to it rebuilds the rows.
+            List<Task> children = new ArrayList<>();
+            int doneChildren = 0;
+            boolean showDone = TaskNHGuiData.shownDoneChildren.contains(task.id);
+            for (Task child : allTasks) {
+                // A subtask stays under its parent whatever its status; the search and the eye button filter it.
+                if (!task.id.equals(child.parentId)) continue;
+                if (child.status == TaskStatus.DONE) doneChildren++;
+                children.add(child);
             }
+            children.sort(ORDER);
+            // A parent and its subtasks are dragged as one block, so nesting survives a reorder.
+            // The height follows the rows that are actually shown, since a search collapses the others
+            // out of the block and a fixed height would leave their space empty below it.
+            Flow block = Flow.column()
+                .width(TaskRowWidget.ROW_WIDTH)
+                .coverChildrenHeight();
+            block.collapseDisabledChild();
+            TaskRowWidget parentRow = new TaskRowWidget(task, data, false, doneChildren);
+            // A parent that doesn't match itself still shows while a child does, so the match
+            // isn't left without the task it belongs to.
+            parentRow.setEnabledIf(w -> matchesQuery(task, query(data)) || anyMatches(children, query(data)));
+            block.child(parentRow);
+            for (Task child : children) {
+                // A done subtask hides under the eye button, so the block keeps showing what is left
+                // to do. A search still reaches it: the row is built either way and only disabled.
+                boolean hidden = child.status == TaskStatus.DONE && !showDone;
+                TaskRowWidget row = new TaskRowWidget(
+                    child,
+                    data,
+                    true,
+                    swapAction(children, child, -1, data),
+                    swapAction(children, child, 1, data));
+                row.setEnabledIf(w -> matchesQuery(child, query(data)) && (!hidden || !query(data).isEmpty()));
+                block.child(row);
+            }
+            TaskBlockItem item = new TaskBlockItem(task, () -> {
+                List<Task> rows = new ArrayList<>();
+                if (matchesQuery(task, query(data)) || anyMatches(children, query(data))) rows.add(task);
+                for (Task child : children) {
+                    boolean hidden = child.status == TaskStatus.DONE && !showDone;
+                    if (matchesQuery(child, query(data)) && (!hidden || !query(data).isEmpty())) rows.add(child);
+                }
+                return rows;
+            }, clicked -> {
+                data.selectTask(clicked.id);
+                TaskNHGui.open(data);
+            }, () -> TaskNHNetwork.sendReorderToServer(list.getValues()));
+            item.width(TaskRowWidget.ROW_WIDTH)
+                .coverChildrenHeight();
+            // The item draws a button frame of its own, which would sit on top of the rows.
+            item.background(IDrawable.EMPTY);
+            item.child(block);
+            list.child(item);
         }
         child(list);
 
@@ -166,10 +211,25 @@ public class TaskListWidget extends Flow {
                         })));
     }
 
-    /** Shows the row only while it matches the current search query, re-checked every tick. */
-    private static TaskRowWidget searchFiltered(TaskRowWidget row, TaskNHGuiData data, Task task) {
-        row.setEnabledIf(w -> matchesQuery(task, query(data)));
-        return row;
+    private static final Comparator<Task> ORDER = Comparator.comparingInt(task -> task.order);
+
+    /**
+     * Builds the action that moves a task one slot within its siblings, or null when it sits at that end already.
+     * Siblings must be sorted.
+     */
+    @Nullable
+    private static Runnable swapAction(List<Task> siblings, Task task, int delta, TaskNHGuiData data) {
+        int from = siblings.indexOf(task);
+        int to = from + delta;
+        if (from < 0 || to < 0 || to >= siblings.size()) return null;
+        return () -> {
+            List<Task> moved = new ArrayList<>(siblings);
+            moved.add(to, moved.remove(from));
+            // Renumbering the whole group also repairs ties, which every task has in a world saved before ordering
+            // existed. One packet carries the group, so the team gets a single task list back.
+            TaskNHNetwork.sendReorderToServer(moved);
+            TaskNHGui.open(data);
+        };
     }
 
     private static boolean anyMatches(List<Task> tasks, String query) {

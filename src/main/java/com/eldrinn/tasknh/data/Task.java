@@ -37,6 +37,8 @@ public class Task {
     /** Parent task id, or null for a root task. Only one nesting level is allowed. */
     @Nullable
     public UUID parentId;
+    /** Manual sort position among siblings, shared by the whole team. Lower comes first. */
+    public int order;
     public final List<ChecklistItem> checklist;
     public final List<Comment> comments; // soft limit enforced on add: max 50
 
@@ -75,6 +77,7 @@ public class Task {
         if (trackItem != null) tag.setString("trackItem", trackItem);
         if (trackItemCount > 1) tag.setInteger("trackItemCount", trackItemCount);
         tag.setBoolean("showOnMap", showOnMap);
+        tag.setInteger("order", order);
         if (parentId != null) {
             tag.setLong("parentMost", parentId.getMostSignificantBits());
             tag.setLong("parentLeast", parentId.getLeastSignificantBits());
@@ -113,6 +116,8 @@ public class Task {
         // anything, and an out of range count would later fail to decode on the client, so clamp on load.
         task.trackItemCount = tag.hasKey("trackItemCount") ? clampTrackItemCount(tag.getInteger("trackItemCount")) : 1;
         task.showOnMap = tag.getBoolean("showOnMap");
+        // Worlds saved before manual ordering have no key, so everything starts at 0 and keeps its old order.
+        task.order = tag.getInteger("order");
         if (tag.hasKey("parentMost")) {
             task.parentId = new UUID(tag.getLong("parentMost"), tag.getLong("parentLeast"));
         }
@@ -149,6 +154,7 @@ public class Task {
         buf.writeStringToBuffer(trackItem != null ? trackItem : "");
         buf.writeInt(trackItemCount);
         buf.writeBoolean(showOnMap);
+        buf.writeInt(order);
         buf.writeBoolean(parentId != null);
         if (parentId != null) {
             buf.writeLong(parentId.getMostSignificantBits());
@@ -192,6 +198,7 @@ public class Task {
             throw new IOException("Invalid track item count: " + trackCount);
         task.trackItemCount = trackCount;
         task.showOnMap = buf.readBoolean();
+        task.order = buf.readInt();
         if (buf.readBoolean()) {
             task.parentId = new UUID(buf.readLong(), buf.readLong());
         }

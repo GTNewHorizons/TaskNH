@@ -21,6 +21,7 @@ public class TaskNHNetwork {
         CHANNEL.toServer(new CreateTaskPacket());
         CHANNEL.toServer(new UpdateTaskPacket());
         CHANNEL.toServer(new DeleteTaskPacket());
+        CHANNEL.toServer(new ReorderTasksPacket());
         CHANNEL.toServer(new RemindTaskPacket());
     }
 
@@ -33,6 +34,21 @@ public class TaskNHNetwork {
         com.eldrinn.tasknh.gui.TaskNHGui.expectSelfSync();
         com.eldrinn.tasknh.cache.TaskNHClientCache.putLocal(task);
         CHANNEL.sendToServer(packet);
+    }
+
+    /**
+     * Sends one finished reorder of a group of tasks. The positions are applied to the cached tasks
+     * right away, so the list keeps the order the player dropped them in until the server answers.
+     */
+    @cpw.mods.fml.relauncher.SideOnly(cpw.mods.fml.relauncher.Side.CLIENT)
+    public static void sendReorderToServer(List<com.eldrinn.tasknh.data.Task> ordered) {
+        List<UUID> ids = new java.util.ArrayList<>(ordered.size());
+        for (int i = 0; i < ordered.size(); i++) {
+            ordered.get(i).order = i;
+            ids.add(ordered.get(i).id);
+        }
+        com.eldrinn.tasknh.gui.TaskNHGui.expectSelfSync();
+        CHANNEL.sendToServer(new ReorderTasksPacket(ids));
     }
 
     /**

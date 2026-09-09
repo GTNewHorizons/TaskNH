@@ -1,5 +1,7 @@
 package com.eldrinn.tasknh.gui;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
@@ -33,6 +35,13 @@ public class TaskNHGuiData {
 
     /** Whether the tracked item count field is shown under the slot. Toggled by middle-clicking the slot. */
     public boolean trackCountExpanded = false;
+
+    /**
+     * Parent tasks whose done subtasks are shown in the list. Static so the choice survives closing
+     * the GUI, which builds a new instance every time. Cleared of unknown ids on every sync,
+     * together with stale pins, see TaskNHClientCache#update.
+     */
+    public static final Set<UUID> shownDoneChildren = new HashSet<>();
 
     /** Scroll state of the task list, kept across rebuilds. */
     public final ScrollMemoryList.Memory listScroll = new ScrollMemoryList.Memory();
