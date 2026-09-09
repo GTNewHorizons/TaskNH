@@ -26,7 +26,6 @@ import com.eldrinn.tasknh.gui.ColorUtils;
 import com.eldrinn.tasknh.gui.TaskNHGui;
 import com.eldrinn.tasknh.gui.TaskNHGuiData;
 import com.eldrinn.tasknh.network.TaskNHNetwork;
-import com.eldrinn.tasknh.network.UpdateTaskPacket;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -121,10 +120,17 @@ public class TaskListWidget extends Flow {
             }
             children.sort(ORDER);
             // A parent and its subtasks are dragged as one block, so nesting survives a reorder.
+            // The height follows the rows that are actually shown, since a search collapses the others
+            // out of the block and a fixed height would leave their space empty below it.
             Flow block = Flow.column()
-                .size(TaskRowWidget.ROW_WIDTH, 20 * (1 + children.size()));
+                .width(TaskRowWidget.ROW_WIDTH)
+                .coverChildrenHeight();
             block.collapseDisabledChild();
-            block.child(new TaskRowWidget(task, data, false));
+            TaskRowWidget parentRow = new TaskRowWidget(task, data, false);
+            // A parent that doesn't match itself still shows while a child does, so the match
+            // isn't left without the task it belongs to.
+            parentRow.setEnabledIf(w -> matchesQuery(task, query(data)) || anyMatches(children, query(data)));
+            block.child(parentRow);
             for (Task child : children) {
                 TaskRowWidget row = new TaskRowWidget(
                     child,
@@ -135,34 +141,24 @@ public class TaskListWidget extends Flow {
                 row.setEnabledIf(w -> matchesQuery(child, query(data)));
                 block.child(row);
             }
-            // A parent that doesn't match itself still shows while a child does, so the match
-            // isn't left without the task it belongs to.
             TaskBlockItem item = new TaskBlockItem(task, () -> {
                 List<Task> rows = new ArrayList<>();
-                rows.add(task);
+                if (matchesQuery(task, query(data)) || anyMatches(children, query(data))) rows.add(task);
                 for (Task child : children) {
                     if (matchesQuery(child, query(data))) rows.add(child);
                 }
                 return rows;
-            }, () -> matchesQuery(task, query(data)) || anyMatches(children, query(data)), clicked -> {
+            }, clicked -> {
                 data.selectTask(clicked.id);
                 TaskNHGui.open(data);
-            });
-            item.size(TaskRowWidget.ROW_WIDTH, 20 * (1 + children.size()));
+            }, () -> TaskNHNetwork.sendReorderToServer(list.getValues()));
+            item.width(TaskRowWidget.ROW_WIDTH)
+                .coverChildrenHeight();
             // The item draws a button frame of its own, which would sit on top of the rows.
             item.background(IDrawable.EMPTY);
             item.child(block);
             list.child(item);
         }
-        // Dropping a block writes the new order back. Only the tasks that actually shifted are sent.
-        list.onChange(ordered -> {
-            for (int i = 0; i < ordered.size(); i++) {
-                Task moved = ordered.get(i);
-                if (moved.order == i) continue;
-                moved.order = i;
-                TaskNHNetwork.sendEditToServer(moved, new UpdateTaskPacket(moved));
-            }
-        });
         child(list);
 
         // Bottom bar: New Task + HUD settings + theme toggle
@@ -222,13 +218,8 @@ public class TaskListWidget extends Flow {
             List<Task> moved = new ArrayList<>(siblings);
             moved.add(to, moved.remove(from));
             // Renumbering the whole group also repairs ties, which every task has in a world saved before ordering
-            // existed. Only the tasks that actually shifted are sent.
-            for (int i = 0; i < moved.size(); i++) {
-                Task sibling = moved.get(i);
-                if (sibling.order == i) continue;
-                sibling.order = i;
-                TaskNHNetwork.sendEditToServer(sibling, new UpdateTaskPacket(sibling));
-            }
+            // existed. One packet carries the group, so the team gets a single task list back.
+            TaskNHNetwork.sendReorderToServer(moved);
             TaskNHGui.open(data);
         };
     }

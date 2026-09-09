@@ -21,9 +21,9 @@ public class SortableTaskList extends SortableListWidget<Task> {
 
     public SortableTaskList(ScrollMemoryList.Memory memory, int scrollbarWidth) {
         this.memory = memory;
-        // The sortable list turns this off for its move animation, but the search hides rows by disabling them and
-        // needs them out of the layout, not left behind as gaps.
-        collapseDisabledChild(true);
+        // Collapsing disabled children is left off, the way the sortable list sets it up: dragging disables the
+        // block it picked up, and dropping it out of the layout would slide the rest up and shift the drop target
+        // by one. The search collapses its rows inside each block instead.
         // Rows are narrower than the list by the scrollbar width. Centering, the default, would
         // split that gap and move the whole list sideways whenever the scrollbar turns on or off.
         crossAxisAlignment(com.cleanroommc.modularui.utils.Alignment.CrossAxis.START);
