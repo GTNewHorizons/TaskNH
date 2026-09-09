@@ -14,9 +14,16 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.JsonToNBT;
+import net.minecraft.nbt.NBTBase;
+import net.minecraft.nbt.NBTException;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ChatComponentTranslation;
@@ -271,8 +278,9 @@ public class TaskNHCommand extends CommandBase {
                     obj.addProperty("title", t.title);
                     obj.addProperty("description", t.description);
                     obj.addProperty("status", t.status.name());
-                    if (t.iconItem != null) obj.addProperty("iconItem", t.iconItem);
-                    if (t.trackItem != null) obj.addProperty("trackItem", t.trackItem);
+                    // Written as NBT so items that differ only by tag survive a round trip.
+                    if (t.iconItem != null) obj.addProperty("iconStack", stackToJson(t.iconItem));
+                    if (t.trackItem != null) obj.addProperty("trackStack", stackToJson(t.trackItem));
                     if (t.trackItemCount > 1) obj.addProperty("trackItemCount", t.trackItemCount);
                     obj.addProperty("showOnMap", t.showOnMap);
                     if (t.location != null) {
@@ -379,10 +387,25 @@ public class TaskNHCommand extends CommandBase {
                             TaskStatus.valueOf(
                                 obj.get("status")
                                     .getAsString()));
-                        if (obj.has("iconItem")) t.iconItem = obj.get("iconItem")
-                            .getAsString();
-                        if (obj.has("trackItem")) t.trackItem = obj.get("trackItem")
-                            .getAsString();
+                        // "iconItem" and "trackItem" hold the pre-NBT "modid:item:meta" string, still accepted.
+                        if (obj.has("iconStack")) {
+                            t.iconItem = stackFromJson(
+                                obj.get("iconStack")
+                                    .getAsString());
+                        } else if (obj.has("iconItem")) {
+                            t.iconItem = Task.parseLegacyItem(
+                                obj.get("iconItem")
+                                    .getAsString());
+                        }
+                        if (obj.has("trackStack")) {
+                            t.trackItem = stackFromJson(
+                                obj.get("trackStack")
+                                    .getAsString());
+                        } else if (obj.has("trackItem")) {
+                            t.trackItem = Task.parseLegacyItem(
+                                obj.get("trackItem")
+                                    .getAsString());
+                        }
                         if (obj.has("trackItemCount")) t.trackItemCount = Task.clampTrackItemCount(
                             obj.get("trackItemCount")
                                 .getAsInt());
@@ -486,5 +509,23 @@ public class TaskNHCommand extends CommandBase {
         }
         sender.addChatMessage(new ChatComponentTranslation("tasknh.cmd.task_not_found", shortId));
         return null;
+    }
+
+    /** An item as its NBT text, the form the export writes and a person can still read and edit. */
+    private static String stackToJson(ItemStack stack) {
+        return stack.writeToNBT(new NBTTagCompound())
+            .toString();
+    }
+
+    /** Reads back what {@link #stackToJson} wrote. Returns null for text that is not valid item NBT. */
+    @Nullable
+    private static ItemStack stackFromJson(String value) {
+        try {
+            NBTBase tag = JsonToNBT.func_150315_a(value);
+            if (!(tag instanceof NBTTagCompound compound)) return null;
+            return ItemStack.loadItemStackFromNBT(compound);
+        } catch (NBTException e) {
+            return null;
+        }
     }
 }

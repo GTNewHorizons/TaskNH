@@ -7,6 +7,8 @@ import java.util.UUID;
 
 import javax.annotation.Nullable;
 
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.network.PacketBuffer;
@@ -21,17 +23,22 @@ public class Task {
     public final List<AssignedPlayer> assignees;
     @Nullable
     public TaskLocation location;
+    /** Shown next to the title. Kept as a stack so items that differ only by NBT keep their own icon. */
     @Nullable
-    public String iconItem; // format: "modid:itemname:meta", e.g. "minecraft:diamond:0"
+    public ItemStack iconItem;
+    /** The task auto-completes once a member carries this item. */
     @Nullable
-    public String trackItem; // same format as iconItem; task auto-completes once seen in a member's inventory
+    public ItemStack trackItem;
     /**
      * Upper bound for {@link #trackItemCount}, enforced wherever the count is set.
      * A main inventory holds 36 slots of at most 64, so a larger count could never be reached.
      * Items that stack lower than 64 top out below this.
      */
     public static final int MAX_TRACK_ITEM_COUNT = 36 * 64;
-    /** How many of trackItem one member has to carry. Set from the stack size dragged out of NEI. */
+    /**
+     * How many of trackItem one member has to carry. Kept apart from the stack, which stores its size
+     * in a single byte and could not hold the range this allows.
+     */
     public int trackItemCount = 1;
     public boolean showOnMap = false;
     /** Parent task id, or null for a root task. Only one nesting level is allowed. */
@@ -58,6 +65,21 @@ public class Task {
         return Math.min(MAX_TRACK_ITEM_COUNT, Math.max(1, count));
     }
 
+    /** Reads the "modid:item:meta" string tasks used before items were stored as stacks. */
+    @Nullable
+    public static ItemStack parseLegacyItem(String value) {
+        if (value == null || value.isEmpty()) return null;
+        String[] parts = value.split(":");
+        if (parts.length < 3) return null;
+        Item item = (Item) Item.itemRegistry.getObject(parts[0] + ":" + parts[1]);
+        if (item == null) return null;
+        try {
+            return new ItemStack(item, 1, Integer.parseInt(parts[2]));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     public NBTTagCompound toNBT() {
         NBTTagCompound tag = new NBTTagCompound();
         tag.setLong("idMost", id.getMostSignificantBits());
@@ -73,8 +95,8 @@ public class Task {
         tag.setBoolean("hasLocation", location != null);
         if (location != null) tag.setTag("location", location.toNBT());
 
-        if (iconItem != null) tag.setString("iconItem", iconItem);
-        if (trackItem != null) tag.setString("trackItem", trackItem);
+        if (iconItem != null) tag.setTag("iconStack", iconItem.writeToNBT(new NBTTagCompound()));
+        if (trackItem != null) tag.setTag("trackStack", trackItem.writeToNBT(new NBTTagCompound()));
         if (trackItemCount > 1) tag.setInteger("trackItemCount", trackItemCount);
         tag.setBoolean("showOnMap", showOnMap);
         tag.setInteger("order", order);
@@ -110,8 +132,12 @@ public class Task {
             task.location = TaskLocation.fromNBT(tag.getCompoundTag("location"));
         }
 
-        if (tag.hasKey("iconItem")) task.iconItem = tag.getString("iconItem");
-        if (tag.hasKey("trackItem")) task.trackItem = tag.getString("trackItem");
+        // "iconItem" and "trackItem" are the pre-NBT tags, a "modid:item:meta" string. Worlds saved with them
+        // keep loading, and the task is written back in the stack form on the next save.
+        task.iconItem = tag.hasKey("iconStack") ? ItemStack.loadItemStackFromNBT(tag.getCompoundTag("iconStack"))
+            : parseLegacyItem(tag.getString("iconItem"));
+        task.trackItem = tag.hasKey("trackStack") ? ItemStack.loadItemStackFromNBT(tag.getCompoundTag("trackStack"))
+            : parseLegacyItem(tag.getString("trackItem"));
         // Tasks saved before the count existed track a single item. A save edited by hand can hold
         // anything, and an out of range count would later fail to decode on the client, so clamp on load.
         task.trackItemCount = tag.hasKey("trackItemCount") ? clampTrackItemCount(tag.getInteger("trackItemCount")) : 1;
@@ -150,8 +176,8 @@ public class Task {
         buf.writeBoolean(location != null);
         if (location != null) location.writeToBuf(buf);
 
-        buf.writeStringToBuffer(iconItem != null ? iconItem : "");
-        buf.writeStringToBuffer(trackItem != null ? trackItem : "");
+        buf.writeItemStackToBuffer(iconItem);
+        buf.writeItemStackToBuffer(trackItem);
         buf.writeInt(trackItemCount);
         buf.writeBoolean(showOnMap);
         buf.writeInt(order);
@@ -189,10 +215,8 @@ public class Task {
             task.location = TaskLocation.readFromBuf(buf);
         }
 
-        String icon = buf.readStringFromBuffer(256);
-        task.iconItem = icon.isEmpty() ? null : icon;
-        String track = buf.readStringFromBuffer(256);
-        task.trackItem = track.isEmpty() ? null : track;
+        task.iconItem = buf.readItemStackFromBuffer();
+        task.trackItem = buf.readItemStackFromBuffer();
         int trackCount = buf.readInt();
         if (trackCount < 1 || trackCount > MAX_TRACK_ITEM_COUNT)
             throw new IOException("Invalid track item count: " + trackCount);

@@ -1,6 +1,5 @@
 package com.eldrinn.tasknh.gui.widget;
 
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
 import org.jetbrains.annotations.NotNull;
@@ -35,9 +34,9 @@ public class IconSlotWidget extends Widget<IconSlotWidget>
 
     public interface ItemHolder {
 
-        String get();
+        ItemStack get();
 
-        void set(String iconItem);
+        void set(ItemStack iconItem);
 
         /** Stack size the slot stands for. A slot that only holds an icon keeps the default. */
         default int getCount() {
@@ -65,7 +64,11 @@ public class IconSlotWidget extends Widget<IconSlotWidget>
 
     @Override
     public boolean handleDragAndDrop(@NotNull ItemStack draggedStack, int button) {
-        iconHolder.set(Item.itemRegistry.getNameForObject(draggedStack.getItem()) + ":" + draggedStack.getItemDamage());
+        // A copy of one item, NBT included: the dragged stack belongs to NEI and its size is the amount
+        // the player asked for, which the task keeps in a field of its own.
+        ItemStack stack = draggedStack.copy();
+        stack.stackSize = 1;
+        iconHolder.set(stack);
         // NEI hands over the stack size from its own quantity field, see PanelWidget#getDraggedStackWithQuantity.
         iconHolder.setCount(Math.max(1, draggedStack.stackSize));
         onChanged.run();
@@ -90,7 +93,7 @@ public class IconSlotWidget extends Widget<IconSlotWidget>
             return Interactable.Result.SUCCESS;
         }
         if (button == 0 && NEIRecipeIntegration.isAvailable()) {
-            ItemStack stack = parseIconItem(iconHolder.get());
+            ItemStack stack = iconHolder.get();
             if (stack != null) {
                 getContext().removeFocus();
                 // An item with no recipes leaves the screen as it is, so the click stays unhandled.
@@ -103,7 +106,7 @@ public class IconSlotWidget extends Widget<IconSlotWidget>
     /** Lets NEI resolve the hovered item, so its R and U hotkeys work over this slot. */
     @Override
     public ItemStack getStackForRecipeViewer() {
-        return parseIconItem(iconHolder.get());
+        return iconHolder.get();
     }
 
     @Override
@@ -113,8 +116,8 @@ public class IconSlotWidget extends Widget<IconSlotWidget>
 
     @Override
     public void draw(ModularGuiContext context, WidgetThemeEntry<?> widgetTheme) {
-        String iconItem = iconHolder.get();
-        if (iconItem == null || iconItem.isEmpty()) {
+        ItemStack stack = iconHolder.get();
+        if (stack == null) {
             // Hint that an NEI item can be dropped here to set a task icon.
             net.minecraft.client.gui.FontRenderer font = net.minecraft.client.Minecraft.getMinecraft().fontRenderer;
             String hint = "+";
@@ -123,8 +126,6 @@ public class IconSlotWidget extends Widget<IconSlotWidget>
             font.drawString(hint, x, y, ColorUtils.textGray.getColor());
             return;
         }
-        ItemStack stack = parseIconItem(iconItem);
-        if (stack == null) return;
         int pad = 1;
         GuiDraw.drawItem(
             stack,
@@ -139,18 +140,4 @@ public class IconSlotWidget extends Widget<IconSlotWidget>
         GuiDraw.drawStandardSlotAmountText(iconHolder.getCount(), null, getArea());
     }
 
-    public static ItemStack parseIconItem(String iconItem) {
-        if (iconItem == null || iconItem.isEmpty()) return null;
-        String[] parts = iconItem.split(":");
-        if (parts.length < 3) return null;
-        String id = parts[0] + ":" + parts[1];
-        int meta;
-        try {
-            meta = Integer.parseInt(parts[2]);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-        Item item = (Item) Item.itemRegistry.getObject(id);
-        return item != null ? new ItemStack(item, 1, meta) : null;
-    }
 }

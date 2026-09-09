@@ -3,7 +3,6 @@ package com.eldrinn.tasknh.integration;
 import java.util.UUID;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ChatComponentText;
 
@@ -48,7 +47,7 @@ public final class BetterQuestingIntegration {
     private static void createTaskFromQuest(IQuest quest) {
         String title = quest.getProperty(NativeProps.NAME);
         Task task = new Task(UUID.randomUUID(), title, "", TaskStatus.OPEN);
-        task.iconItem = toIconString(quest.getProperty(NativeProps.ICON));
+        task.iconItem = toIconStack(quest.getProperty(NativeProps.ICON));
 
         // Map TaskRetrieval required items to checklist items
         for (DBEntry<ITask> entry : quest.getTasks()
@@ -69,12 +68,13 @@ public final class BetterQuestingIntegration {
             .addChatMessage(new ChatComponentText("§aTaskNH: task \"" + title + "\" created."));
     }
 
-    /** Returns "modid:itemname:meta" for the given BigItemStack, or null if unavailable. */
-    private static String toIconString(BigItemStack iconStack) {
+    /** Returns a single item copy of the quest icon, NBT included, or null when the quest has none. */
+    private static ItemStack toIconStack(BigItemStack iconStack) {
         if (iconStack == null) return null;
         ItemStack base = iconStack.getBaseStack();
-        if (base.getItem() == null) return null;
-        String itemName = Item.itemRegistry.getNameForObject(base.getItem());
-        return itemName != null ? itemName + ":" + base.getItemDamage() : null;
+        if (base == null || base.getItem() == null) return null;
+        ItemStack copy = base.copy();
+        copy.stackSize = 1;
+        return copy;
     }
 }
