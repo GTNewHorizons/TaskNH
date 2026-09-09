@@ -107,11 +107,7 @@ public class TaskListWidget extends Flow {
                 boolean showDone = TaskNHGuiData.shownDoneChildren.contains(task.id);
                 for (Task child : allTasks) {
                     if (!task.id.equals(child.parentId)) continue;
-                    // A done subtask hides under the eye button, so the list keeps showing what is left to do.
-                    if (child.status == TaskStatus.DONE) {
-                        doneChildren++;
-                        if (!showDone) continue;
-                    }
+                    if (child.status == TaskStatus.DONE) doneChildren++;
                     children.add(child);
                 }
                 TaskRowWidget parentRow = new TaskRowWidget(task, data, false, doneChildren);
@@ -120,8 +116,11 @@ public class TaskListWidget extends Flow {
                 parentRow.setEnabledIf(w -> matchesQuery(task, query(data)) || anyMatches(children, query(data)));
                 list.child(parentRow);
                 for (Task child : children) {
+                    // A done subtask hides under the eye button, so the list keeps showing what is left
+                    // to do. A search still reaches it: the row is built either way and only disabled.
+                    boolean hidden = child.status == TaskStatus.DONE && !showDone;
                     TaskRowWidget row = new TaskRowWidget(child, data, true);
-                    row.setEnabledIf(w -> matchesQuery(child, query(data)));
+                    row.setEnabledIf(w -> matchesQuery(child, query(data)) && (!hidden || !query(data).isEmpty()));
                     list.child(row);
                 }
             } else if (TaskNHClientCache.get(task.parentId) == null) {

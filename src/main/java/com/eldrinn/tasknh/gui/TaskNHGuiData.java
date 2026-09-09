@@ -35,7 +35,8 @@ public class TaskNHGuiData {
 
     /**
      * Parent tasks whose done subtasks are shown in the list. Static so the choice survives closing
-     * the GUI, which builds a new instance every time. Resets when the player leaves the game.
+     * the GUI, which builds a new instance every time. Cleared of unknown ids on every sync,
+     * together with stale pins, see TaskNHClientCache#update.
      */
     public static final Set<UUID> shownDoneChildren = new HashSet<>();
 
