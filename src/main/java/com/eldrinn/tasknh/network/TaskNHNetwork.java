@@ -44,8 +44,14 @@ public class TaskNHNetwork {
     public static void sendReorderToServer(List<com.eldrinn.tasknh.data.Task> ordered) {
         List<UUID> ids = new java.util.ArrayList<>(ordered.size());
         for (int i = 0; i < ordered.size(); i++) {
+            UUID id = ordered.get(i).id;
+            ids.add(id);
             ordered.get(i).order = i;
-            ids.add(ordered.get(i).id);
+            // A widget holds the task the cache had when the panel was built, and every sync replaces the cache
+            // with fresh objects. Writing the position only into that copy left the rebuild reading the previous
+            // order, so the list moved a task one reopen late.
+            com.eldrinn.tasknh.data.Task cached = com.eldrinn.tasknh.cache.TaskNHClientCache.get(id);
+            if (cached != null) cached.order = i;
         }
         com.eldrinn.tasknh.gui.TaskNHGui.expectSelfSync();
         CHANNEL.sendToServer(new ReorderTasksPacket(ids));
