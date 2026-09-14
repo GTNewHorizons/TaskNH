@@ -58,6 +58,20 @@ public class TaskNHClientCache {
         pinConfig.load();
     }
 
+    /**
+     * Forgets the tasks and team of the server the player left. The next world only syncs when the player is in a
+     * team there, so without this the GUI would keep showing the previous world's tasks.
+     */
+    public static void clear() {
+        tasks.clear();
+        teamMembers.clear();
+        pendingEdit = null;
+        pendingDelete = null;
+        if (cpw.mods.fml.common.Loader.isModLoaded("navigator")) {
+            com.eldrinn.tasknh.navigator.TaskLayerManager.INSTANCE.refreshFromCache(tasks.values());
+        }
+    }
+
     public static void update(Collection<Task> incoming) {
         tasks.clear();
         for (Task t : incoming) {
