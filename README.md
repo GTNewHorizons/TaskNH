@@ -107,7 +107,7 @@ The search bar, the subtask and checklist add fields and the X/Y/Z fields hold u
 
 ## HUD
 
-Pinned tasks are drawn on screen with their checklists. Open the HUD settings from the button in the bottom-right of the task list: drag the handle to reposition, adjust scale, background and how many tasks and checklist lines are shown, or turn the HUD off. Pins and HUD settings are per client and stored in the mod config folder.
+Pinned tasks are drawn on screen with their checklists. Tasks in progress come first, then open and done ones, each group in the order of the task list. Open the HUD settings from the button in the bottom-right of the task list: drag the handle to reposition, adjust scale, background and how many tasks and checklist lines are shown, or turn the HUD off. The client keeps pins and subtask folds separately for each world and shares the HUD settings between them, all in the mod config folder.
 
 ## Config
 
