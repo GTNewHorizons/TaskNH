@@ -70,7 +70,7 @@ public class TaskNHGui {
     /**
      * When we last sent an edit. Each edit comes back as a sync, and rebuilding on that echo kills
      * widget focus and makes rows jump, so a sync arriving right after our own edit is ignored.
-     * ponytail: a time window instead of counting echoes, so a dropped or missing answer can't
+     * A time window instead of counting echoes, so a dropped or missing answer can't
      * leave the GUI permanently deaf to syncs. A teammate's edit landing inside the window shows up
      * with the next sync instead of immediately.
      */
