@@ -5,7 +5,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import net.minecraft.client.Minecraft;
@@ -35,10 +37,22 @@ public class PinnedTasksConfig {
         BOTTOM_RIGHT
     }
 
+    /** How many subtasks a parent shows in the task list. The fold button cycles through them in this order. */
+    public enum Fold {
+        SHOW_ALL,
+        HIDE_DONE,
+        HIDE_ALL
+    }
+
     private static class Data {
 
         @SerializedName("pinnedTasks")
         List<String> pinnedTasks = new ArrayList<>();
+
+        // Only parents that differ from the default SHOW_ALL are stored. Not cleaned on sync like the pins:
+        // the file is shared by every world and server, and a cleanup would drop the other worlds' entries.
+        @SerializedName("foldedTasks")
+        Map<String, String> foldedTasks = new HashMap<>();
 
         @SerializedName("hud")
         HudPosition hud = new HudPosition();
@@ -93,6 +107,7 @@ public class PinnedTasksConfig {
                 data = loaded;
                 if (data.hud == null) data.hud = new HudPosition();
                 if (data.pinnedTasks == null) data.pinnedTasks = new ArrayList<>();
+                if (data.foldedTasks == null) data.foldedTasks = new HashMap<>();
             }
         } catch (IOException e) {
             org.apache.logging.log4j.LogManager.getLogger("tasknh")
@@ -148,6 +163,25 @@ public class PinnedTasksConfig {
         if (data.pinnedTasks.remove(id.toString())) {
             save();
         }
+    }
+
+    public Fold getFold(UUID id) {
+        String value = data.foldedTasks.get(id.toString());
+        if (value == null) return Fold.SHOW_ALL;
+        try {
+            return Fold.valueOf(value);
+        } catch (IllegalArgumentException e) {
+            return Fold.SHOW_ALL;
+        }
+    }
+
+    public void setFold(UUID id, Fold fold) {
+        if (fold == Fold.SHOW_ALL) {
+            data.foldedTasks.remove(id.toString());
+        } else {
+            data.foldedTasks.put(id.toString(), fold.name());
+        }
+        save();
     }
 
     public void removeStale(java.util.Set<UUID> existing) {

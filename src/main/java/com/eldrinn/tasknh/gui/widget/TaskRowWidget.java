@@ -9,6 +9,7 @@ import net.minecraft.item.ItemStack;
 
 import org.jetbrains.annotations.Nullable;
 
+import com.cleanroommc.modularui.ModularUI;
 import com.cleanroommc.modularui.api.ITheme;
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.drawable.GuiDraw;
@@ -23,6 +24,7 @@ import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.TextWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.eldrinn.tasknh.cache.TaskNHClientCache;
+import com.eldrinn.tasknh.config.PinnedTasksConfig;
 import com.eldrinn.tasknh.data.AssignedPlayer;
 import com.eldrinn.tasknh.data.Task;
 import com.eldrinn.tasknh.gui.ColorUtils;
@@ -41,19 +43,23 @@ public class TaskRowWidget extends Flow {
     public static final int ROW_HEIGHT = 20;
     private static final int ICON_W = 20;
     private static final int PIN_BTN_W = 20;
-    private static final int DONE_BTN_W = 20;
+    private static final int FOLD_BTN_W = 20;
+    /** MUI ships this arrow as a texture but has no GuiTextures constant for it. */
+    private static final UITexture ARROW_RIGHT = UITexture.fullImage(ModularUI.ID, "gui/icons/arrow_right");
     /** Width of the reorder column, holding the up and down buttons stacked on top of each other. */
     private static final int MOVE_BTN_W = 16;
     /** Left offset of a child task row, so nesting is visible in the flat list. */
     private static final int INDENT_W = 16;
 
     public TaskRowWidget(Task task, TaskNHGuiData data, boolean isChild) {
-        this(task, data, isChild, 0, null, null);
+        this(task, data, isChild, 0, 0, null, null);
     }
 
-    /** {@code doneChildren} is the number of done subtasks hidden behind this row's eye button. */
-    public TaskRowWidget(Task task, TaskNHGuiData data, boolean isChild, int doneChildren) {
-        this(task, data, isChild, doneChildren, null, null);
+    /**
+     * {@code childCount} and {@code doneChildren} count this row's subtasks, all and done ones, for the fold button.
+     */
+    public TaskRowWidget(Task task, TaskNHGuiData data, boolean isChild, int childCount, int doneChildren) {
+        this(task, data, isChild, childCount, doneChildren, null, null);
     }
 
     /**
@@ -62,11 +68,11 @@ public class TaskRowWidget extends Flow {
      */
     public TaskRowWidget(Task task, TaskNHGuiData data, boolean isChild, @Nullable Runnable moveUp,
         @Nullable Runnable moveDown) {
-        this(task, data, isChild, 0, moveUp, moveDown);
+        this(task, data, isChild, 0, 0, moveUp, moveDown);
     }
 
-    private TaskRowWidget(Task task, TaskNHGuiData data, boolean isChild, int doneChildren, @Nullable Runnable moveUp,
-        @Nullable Runnable moveDown) {
+    private TaskRowWidget(Task task, TaskNHGuiData data, boolean isChild, int childCount, int doneChildren,
+        @Nullable Runnable moveUp, @Nullable Runnable moveDown) {
         super(com.cleanroommc.modularui.api.GuiAxis.X);
         final int indent = isChild ? INDENT_W : 0;
         size(ROW_WIDTH, 20);
@@ -89,9 +95,9 @@ public class TaskRowWidget extends Flow {
         if (task.id.equals(data.selectedTaskId)) {
             selectBtn.background(new Rectangle().setColor(ColorUtils.backgroundRowSelected.getColor()));
         }
-        // The row keeps its full width, but the content stops short of the done button so no text
+        // The row keeps its full width, but the content stops short of the fold button so no text
         // ends up underneath it. A row without that button gives the whole width to the title.
-        final int CONTENT_W = SELECT_BTN_W - (doneChildren > 0 ? DONE_BTN_W : 0);
+        final int CONTENT_W = SELECT_BTN_W - (childCount > 0 ? FOLD_BTN_W : 0);
         selectBtn.child(buildRowContent(task, SELECT_BTN_W, CONTENT_W));
 
         child(selectBtn);
@@ -104,27 +110,41 @@ public class TaskRowWidget extends Flow {
             return;
         }
 
-        if (doneChildren > 0) {
-            boolean shown = TaskNHGuiData.shownDoneChildren.contains(task.id);
-            ButtonWidget<?> doneBtn = new ButtonWidget<>();
-            doneBtn.size(DONE_BTN_W, 20);
+        if (childCount > 0) {
+            boolean hasDone = doneChildren > 0;
+            // Hiding the done subtasks only differs from the other two states when some are done and some are not.
+            // Otherwise it hides nothing or everything, so the button shows and cycles it as that state.
+            boolean mixed = hasDone && doneChildren < childCount;
+            PinnedTasksConfig.Fold fold = TaskNHClientCache.getPinConfig()
+                .getFold(task.id);
+            if (fold == PinnedTasksConfig.Fold.HIDE_DONE && !mixed) {
+                fold = hasDone ? PinnedTasksConfig.Fold.HIDE_ALL : PinnedTasksConfig.Fold.SHOW_ALL;
+            }
+            final PinnedTasksConfig.Fold next = nextFold(fold, mixed);
+            ButtonWidget<?> foldBtn = new ButtonWidget<>();
+            foldBtn.size(FOLD_BTN_W, 20);
             // Sits left of the pin button. Flow skips children whose position on its axis is set,
             // so the button takes no width from the row itself.
-            doneBtn.right(PIN_BTN_W);
-            doneBtn.overlay(shown ? GuiTextures.VISIBLE : GuiTextures.INVISIBLE);
-            doneBtn.addTooltipLine(
-                String.format(
-                    net.minecraft.util.StatCollector.translateToLocal("tasknh.gui.row.done_children"),
-                    doneChildren));
-            doneBtn.onMousePressed(btn -> {
+            foldBtn.right(PIN_BTN_W);
+            foldBtn.overlay(foldIcon(fold));
+            foldBtn.addTooltipLine(
+                net.minecraft.util.StatCollector.translateToLocal(
+                    "tasknh.gui.row.fold." + fold.name()
+                        .toLowerCase(java.util.Locale.ROOT)));
+            if (hasDone) {
+                foldBtn.addTooltipLine(
+                    String.format(
+                        net.minecraft.util.StatCollector.translateToLocal("tasknh.gui.row.done_children"),
+                        doneChildren));
+            }
+            foldBtn.onMousePressed(btn -> {
                 if (btn != 0) return false;
-                if (!TaskNHGuiData.shownDoneChildren.remove(task.id)) {
-                    TaskNHGuiData.shownDoneChildren.add(task.id);
-                }
+                TaskNHClientCache.getPinConfig()
+                    .setFold(task.id, next);
                 TaskNHGui.open(data);
                 return true;
             });
-            child(doneBtn);
+            child(foldBtn);
         }
 
         boolean pinned = TaskNHClientCache.isPinned(task.id);
@@ -152,6 +172,39 @@ public class TaskRowWidget extends Flow {
         });
 
         child(pinBtn);
+    }
+
+    /**
+     * Unfolded, then done subtasks hidden, then all hidden. The middle step is skipped unless {@code mixed}: some
+     * subtasks done and some not.
+     */
+    private static PinnedTasksConfig.Fold nextFold(PinnedTasksConfig.Fold fold, boolean mixed) {
+        switch (fold) {
+            case SHOW_ALL:
+                return mixed ? PinnedTasksConfig.Fold.HIDE_DONE : PinnedTasksConfig.Fold.HIDE_ALL;
+            case HIDE_DONE:
+                return PinnedTasksConfig.Fold.HIDE_ALL;
+            default:
+                return PinnedTasksConfig.Fold.SHOW_ALL;
+        }
+    }
+
+    /** Down arrow when unfolded, the same arrow greyed out when done subtasks are hidden, right arrow when all are. */
+    private static IDrawable foldIcon(PinnedTasksConfig.Fold fold) {
+        UITexture texture;
+        switch (fold) {
+            case SHOW_ALL:
+                texture = GuiTextures.ARROW_DOWN;
+                break;
+            case HIDE_DONE:
+                texture = GuiTextures.ARROW_DOWN.withColorOverride(ColorUtils.iconPinInactive.getColor());
+                break;
+            default:
+                texture = ARROW_RIGHT;
+        }
+        // The arrow textures are 10x10; drawn at their own size instead of stretched over the button.
+        return texture.asIcon()
+            .size(10);
     }
 
     /** An edge row keeps the button so the column width stays the same, greyed out and inert. */

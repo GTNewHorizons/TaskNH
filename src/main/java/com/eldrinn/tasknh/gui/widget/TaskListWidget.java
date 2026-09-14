@@ -20,6 +20,7 @@ import com.cleanroommc.modularui.widgets.TextWidget;
 import com.cleanroommc.modularui.widgets.ToggleButton;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.eldrinn.tasknh.cache.TaskNHClientCache;
+import com.eldrinn.tasknh.config.PinnedTasksConfig;
 import com.eldrinn.tasknh.data.Task;
 import com.eldrinn.tasknh.data.TaskStatus;
 import com.eldrinn.tasknh.gui.ColorUtils;
@@ -115,9 +116,10 @@ public class TaskListWidget extends Flow {
             // taken once here rather than per tick, since any change to it rebuilds the rows.
             List<Task> children = new ArrayList<>();
             int doneChildren = 0;
-            boolean showDone = TaskNHGuiData.shownDoneChildren.contains(task.id);
+            PinnedTasksConfig.Fold fold = TaskNHClientCache.getPinConfig()
+                .getFold(task.id);
             for (Task child : allTasks) {
-                // A subtask stays under its parent whatever its status; the search and the eye button filter it.
+                // A subtask stays under its parent whatever its status; the search and the fold button filter it.
                 if (!task.id.equals(child.parentId)) continue;
                 if (child.status == TaskStatus.DONE) doneChildren++;
                 children.add(child);
@@ -130,15 +132,15 @@ public class TaskListWidget extends Flow {
                 .width(TaskRowWidget.ROW_WIDTH)
                 .coverChildrenHeight();
             block.collapseDisabledChild();
-            TaskRowWidget parentRow = new TaskRowWidget(task, data, false, doneChildren);
+            TaskRowWidget parentRow = new TaskRowWidget(task, data, false, children.size(), doneChildren);
             // A parent that doesn't match itself still shows while a child does, so the match
             // isn't left without the task it belongs to.
             parentRow.setEnabledIf(w -> matchesQuery(task, query(data)) || anyMatches(children, query(data)));
             block.child(parentRow);
             for (Task child : children) {
-                // A done subtask hides under the eye button, so the block keeps showing what is left
-                // to do. A search still reaches it: the row is built either way and only disabled.
-                boolean hidden = child.status == TaskStatus.DONE && !showDone;
+                // A folded subtask hides under the fold button. A search still reaches it: the row is
+                // built either way and only disabled.
+                boolean hidden = isFolded(child, fold);
                 TaskRowWidget row = new TaskRowWidget(
                     child,
                     data,
@@ -152,7 +154,7 @@ public class TaskListWidget extends Flow {
                 List<Task> rows = new ArrayList<>();
                 if (matchesQuery(task, query(data)) || anyMatches(children, query(data))) rows.add(task);
                 for (Task child : children) {
-                    boolean hidden = child.status == TaskStatus.DONE && !showDone;
+                    boolean hidden = isFolded(child, fold);
                     if (matchesQuery(child, query(data)) && (!hidden || !query(data).isEmpty())) rows.add(child);
                 }
                 return rows;
@@ -241,6 +243,11 @@ public class TaskListWidget extends Flow {
 
     private static String query(TaskNHGuiData data) {
         return data.searchQuery.toLowerCase();
+    }
+
+    private static boolean isFolded(Task child, PinnedTasksConfig.Fold fold) {
+        return fold == PinnedTasksConfig.Fold.HIDE_ALL
+            || (fold == PinnedTasksConfig.Fold.HIDE_DONE && child.status == TaskStatus.DONE);
     }
 
     private static boolean matchesQuery(Task task, String query) {
