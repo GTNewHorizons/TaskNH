@@ -165,6 +165,9 @@ public class PinnedTasksConfig {
             data.worlds.put(worldId.toString(), entry);
             changed = true;
         }
+        // A hand-edited file can carry explicit nulls, which gson keeps.
+        if (entry.pinnedTasks == null) entry.pinnedTasks = new ArrayList<>();
+        if (entry.foldedTasks == null) entry.foldedTasks = new HashMap<>();
         // The next sync drops whatever of these belongs to another world.
         if (data.legacyPinnedTasks != null) {
             entry.pinnedTasks.addAll(data.legacyPinnedTasks);
