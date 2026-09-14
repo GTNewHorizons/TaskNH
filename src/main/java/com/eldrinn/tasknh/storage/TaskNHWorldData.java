@@ -33,6 +33,9 @@ public class TaskNHWorldData extends WorldSavedData {
 
     private final Map<UUID, Long> playerLastSeen = new LinkedHashMap<>();
 
+    /** Tells worlds apart on the client, which keeps pins and folds per world. Created on first use. */
+    private UUID worldId;
+
     public TaskNHWorldData() {
         super(DATA_NAME);
     }
@@ -122,6 +125,14 @@ public class TaskNHWorldData extends WorldSavedData {
         markDirty();
     }
 
+    public UUID getWorldId() {
+        if (worldId == null) {
+            worldId = UUID.randomUUID();
+            markDirty();
+        }
+        return worldId;
+    }
+
     public long getPlayerLastSeen(UUID playerId) {
         return playerLastSeen.getOrDefault(playerId, 0L);
     }
@@ -134,6 +145,10 @@ public class TaskNHWorldData extends WorldSavedData {
     @Override
     public void readFromNBT(NBTTagCompound compound) {
         teamTasks.clear();
+
+        if (compound.hasKey("worldIdMost")) {
+            worldId = new UUID(compound.getLong("worldIdMost"), compound.getLong("worldIdLeast"));
+        }
 
         if (compound.hasKey("perTeamTasks")) {
             // New format
@@ -184,6 +199,11 @@ public class TaskNHWorldData extends WorldSavedData {
 
     @Override
     public void writeToNBT(NBTTagCompound compound) {
+        if (worldId != null) {
+            compound.setLong("worldIdMost", worldId.getMostSignificantBits());
+            compound.setLong("worldIdLeast", worldId.getLeastSignificantBits());
+        }
+
         NBTTagList teamList = new NBTTagList();
         for (Map.Entry<UUID, LinkedHashMap<UUID, Task>> teamEntry : teamTasks.entrySet()) {
             NBTTagCompound entry = new NBTTagCompound();

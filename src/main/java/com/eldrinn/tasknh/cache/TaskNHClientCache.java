@@ -72,6 +72,11 @@ public class TaskNHClientCache {
         }
     }
 
+    /** Called on login, before the first sync, so pins and folds are read from the right world. */
+    public static void setWorld(UUID worldId) {
+        pinConfig.setWorld(worldId);
+    }
+
     public static void update(Collection<Task> incoming) {
         tasks.clear();
         for (Task t : incoming) {

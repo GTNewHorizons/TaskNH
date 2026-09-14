@@ -20,6 +20,7 @@ import com.eldrinn.tasknh.data.Task;
 import com.eldrinn.tasknh.network.SyncAllTasksPacket;
 import com.eldrinn.tasknh.network.SyncTeamMembersPacket;
 import com.eldrinn.tasknh.network.TaskNHNetwork;
+import com.eldrinn.tasknh.network.WorldIdPacket;
 import com.eldrinn.tasknh.storage.TaskNHWorldData;
 import com.gtnewhorizon.gtnhlib.teams.Team;
 import com.gtnewhorizon.gtnhlib.teams.TeamManager;
@@ -33,10 +34,13 @@ public class PlayerLoginHandler {
     public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.player instanceof EntityPlayerMP player)) return;
 
+        TaskNHWorldData data = TaskNHWorldData.get();
+        // Ahead of the team check and the sync: the client needs the world before it reads or cleans pins.
+        TaskNHNetwork.CHANNEL.sendTo(new WorldIdPacket(data.getWorldId()), player);
+
         Team team = TeamManager.getTeamByPlayer(player.getUniqueID());
         if (team == null) return;
 
-        TaskNHWorldData data = TaskNHWorldData.get();
         TaskNHNetwork.CHANNEL.sendTo(new SyncAllTasksPacket(data.getTeamTasks(team.getTeamId())), player);
         TaskNHNetwork.CHANNEL.sendTo(buildTeamMembersPacket(team), player);
         sendLoginNotifications(player, team, data);
