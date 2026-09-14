@@ -3,6 +3,7 @@ package com.eldrinn.tasknh.cache;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,7 @@ import javax.annotation.Nullable;
 
 import com.eldrinn.tasknh.config.PinnedTasksConfig;
 import com.eldrinn.tasknh.data.Task;
+import com.eldrinn.tasknh.data.TaskStatus;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -125,13 +127,28 @@ public class TaskNHClientCache {
             .size() < pinConfig.getMaxPinnedTasks();
     }
 
+    /**
+     * Pinned tasks in the order the HUD shows them: the ones in progress first, then the open and the done ones.
+     * Within a status they follow the manual order of the task list, since each tab numbers its tasks separately.
+     */
     public static List<Task> getPinnedTasks() {
         List<Task> result = new ArrayList<>();
         for (UUID id : pinConfig.getPinnedIds()) {
             Task t = tasks.get(id);
             if (t != null) result.add(t);
         }
+        result.sort(
+            Comparator.comparingInt((Task t) -> hudRank(t.status))
+                .thenComparingInt(t -> t.order));
         return result;
+    }
+
+    private static int hudRank(TaskStatus status) {
+        return switch (status) {
+            case IN_PROGRESS -> 0;
+            case OPEN -> 1;
+            case DONE -> 2;
+        };
     }
 
     public static PinnedTasksConfig getPinConfig() {
