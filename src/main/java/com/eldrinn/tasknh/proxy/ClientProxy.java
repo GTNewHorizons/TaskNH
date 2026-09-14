@@ -16,6 +16,7 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
+import cpw.mods.fml.common.network.FMLNetworkEvent;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -26,6 +27,9 @@ public class ClientProxy extends CommonProxy {
         "key.tasknh.open",
         Keyboard.KEY_Y,
         "key.categories.tasknh");
+
+    /** Set on the network thread when the player leaves a server, handled on the next client tick. */
+    private volatile boolean disconnected = false;
 
     @Override
     public void preInit(FMLPreInitializationEvent event) {
@@ -59,10 +63,20 @@ public class ClientProxy extends CommonProxy {
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
+        if (disconnected) {
+            disconnected = false;
+            TaskNHClientCache.clear();
+        }
         if (KEY_OPEN_GUI.isPressed()) {
             TaskNHGui.open();
         }
         TaskNHGui.tick();
+    }
+
+    // The cache is only safe on the client thread, so the event just leaves a flag for the tick above.
+    @SubscribeEvent
+    public void onDisconnect(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
+        disconnected = true;
     }
 
     @SubscribeEvent
