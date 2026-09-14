@@ -23,6 +23,8 @@ public class TaskNHNetwork {
         CHANNEL.toServer(new DeleteTaskPacket());
         CHANNEL.toServer(new ReorderTasksPacket());
         CHANNEL.toServer(new RemindTaskPacket());
+        // Registered last so the ids of the packets above stay the same.
+        CHANNEL.toClient(new WorldIdPacket());
     }
 
     /**

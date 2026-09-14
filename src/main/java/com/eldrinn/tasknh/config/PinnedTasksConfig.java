@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 
 import com.google.gson.Gson;
@@ -46,16 +48,30 @@ public class PinnedTasksConfig {
 
     private static class Data {
 
+        // Pins and folds from before they were kept per world. Moved into the first world joined, then dropped:
+        // gson skips null fields when writing.
         @SerializedName("pinnedTasks")
-        List<String> pinnedTasks = new ArrayList<>();
+        List<String> legacyPinnedTasks;
 
-        // Only parents that differ from the default SHOW_ALL are stored. Not cleaned on sync like the pins:
-        // the file is shared by every world and server, and a cleanup would drop the other worlds' entries.
         @SerializedName("foldedTasks")
-        Map<String, String> foldedTasks = new HashMap<>();
+        Map<String, String> legacyFoldedTasks;
+
+        /** Keyed by the world id the server sends on login, see WorldIdPacket. */
+        @SerializedName("worlds")
+        Map<String, WorldEntry> worlds = new HashMap<>();
 
         @SerializedName("hud")
         HudPosition hud = new HudPosition();
+    }
+
+    private static class WorldEntry {
+
+        @SerializedName("pinnedTasks")
+        List<String> pinnedTasks = new ArrayList<>();
+
+        // Only parents that differ from the default SHOW_ALL are stored.
+        @SerializedName("foldedTasks")
+        Map<String, String> foldedTasks = new HashMap<>();
     }
 
     private static class HudPosition {
@@ -91,6 +107,10 @@ public class PinnedTasksConfig {
 
     private Data data = new Data();
 
+    /** Entry of the world the player is in, or null until the server sends its id. */
+    @Nullable
+    private WorldEntry world = null;
+
     public void load() {
         File file = configFile();
         boolean migrating = false;
@@ -106,8 +126,7 @@ public class PinnedTasksConfig {
             if (loaded != null) {
                 data = loaded;
                 if (data.hud == null) data.hud = new HudPosition();
-                if (data.pinnedTasks == null) data.pinnedTasks = new ArrayList<>();
-                if (data.foldedTasks == null) data.foldedTasks = new HashMap<>();
+                if (data.worlds == null) data.worlds = new HashMap<>();
             }
         } catch (IOException e) {
             org.apache.logging.log4j.LogManager.getLogger("tasknh")
@@ -137,9 +156,34 @@ public class PinnedTasksConfig {
         }
     }
 
+    /** Switches pins and folds to the given world, and moves the pre-per-world ones into it once. */
+    public void setWorld(UUID worldId) {
+        WorldEntry entry = data.worlds.get(worldId.toString());
+        boolean changed = false;
+        if (entry == null) {
+            entry = new WorldEntry();
+            data.worlds.put(worldId.toString(), entry);
+            changed = true;
+        }
+        // The next sync drops whatever of these belongs to another world.
+        if (data.legacyPinnedTasks != null) {
+            entry.pinnedTasks.addAll(data.legacyPinnedTasks);
+            data.legacyPinnedTasks = null;
+            changed = true;
+        }
+        if (data.legacyFoldedTasks != null) {
+            entry.foldedTasks.putAll(data.legacyFoldedTasks);
+            data.legacyFoldedTasks = null;
+            changed = true;
+        }
+        world = entry;
+        if (changed) save();
+    }
+
     public List<UUID> getPinnedIds() {
         List<UUID> result = new ArrayList<>();
-        for (String s : data.pinnedTasks) {
+        if (world == null) return result;
+        for (String s : world.pinnedTasks) {
             try {
                 result.add(UUID.fromString(s));
             } catch (IllegalArgumentException ignored) {}
@@ -148,25 +192,26 @@ public class PinnedTasksConfig {
     }
 
     public boolean isPinned(UUID id) {
-        return data.pinnedTasks.contains(id.toString());
+        return world != null && world.pinnedTasks.contains(id.toString());
     }
 
     public void pin(UUID id) {
+        if (world == null) return;
         String s = id.toString();
-        if (data.pinnedTasks.contains(s)) return;
-        if (data.pinnedTasks.size() >= data.hud.maxPinnedTasks) return;
-        data.pinnedTasks.add(s);
+        if (world.pinnedTasks.contains(s)) return;
+        if (world.pinnedTasks.size() >= data.hud.maxPinnedTasks) return;
+        world.pinnedTasks.add(s);
         save();
     }
 
     public void unpin(UUID id) {
-        if (data.pinnedTasks.remove(id.toString())) {
+        if (world != null && world.pinnedTasks.remove(id.toString())) {
             save();
         }
     }
 
     public Fold getFold(UUID id) {
-        String value = data.foldedTasks.get(id.toString());
+        String value = world == null ? null : world.foldedTasks.get(id.toString());
         if (value == null) return Fold.SHOW_ALL;
         try {
             return Fold.valueOf(value);
@@ -176,22 +221,28 @@ public class PinnedTasksConfig {
     }
 
     public void setFold(UUID id, Fold fold) {
+        if (world == null) return;
         if (fold == Fold.SHOW_ALL) {
-            data.foldedTasks.remove(id.toString());
+            world.foldedTasks.remove(id.toString());
         } else {
-            data.foldedTasks.put(id.toString(), fold.name());
+            world.foldedTasks.put(id.toString(), fold.name());
         }
         save();
     }
 
+    /** Drops pins and folds of tasks the current world no longer has. Other worlds' entries stay untouched. */
     public void removeStale(java.util.Set<UUID> existing) {
-        boolean changed = data.pinnedTasks.removeIf(s -> {
+        if (world == null) return;
+        java.util.function.Predicate<String> stale = s -> {
             try {
                 return !existing.contains(UUID.fromString(s));
             } catch (IllegalArgumentException e) {
                 return true; // remove malformed entries too
             }
-        });
+        };
+        boolean changed = world.pinnedTasks.removeIf(stale);
+        changed |= world.foldedTasks.keySet()
+            .removeIf(stale);
         if (changed) save();
     }
 
