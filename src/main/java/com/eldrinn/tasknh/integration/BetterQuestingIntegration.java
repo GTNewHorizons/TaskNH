@@ -49,15 +49,22 @@ public final class BetterQuestingIntegration {
         Task task = new Task(UUID.randomUUID(), title, "", TaskStatus.OPEN);
         task.iconItem = toIconStack(quest.getProperty(NativeProps.ICON));
 
-        // Map TaskRetrieval required items to checklist items
+        // Map TaskRetrieval required items to checklist items that check themselves once a member carries them
         for (DBEntry<ITask> entry : quest.getTasks()
             .getEntries()) {
             if (entry.getValue() instanceof TaskRetrieval retrieval) {
                 for (BigItemStack required : retrieval.requiredItems) {
                     String itemName = required.getBaseStack()
                         .getDisplayName();
-                    task.checklist
-                        .add(new ChecklistItem(UUID.randomUUID(), required.stackSize + "x " + itemName, false));
+                    ChecklistItem item = new ChecklistItem(
+                        UUID.randomUUID(),
+                        required.stackSize + "x " + itemName,
+                        false);
+                    item.trackItem = toIconStack(required);
+                    item.trackItemCount = Task.clampTrackItemCount(required.stackSize);
+                    // A quest asking for a tag accepts any item under it, so the item does too.
+                    if (required.hasOreDict()) item.trackOre = required.getOreDict();
+                    task.checklist.add(item);
                 }
             }
         }
@@ -68,7 +75,7 @@ public final class BetterQuestingIntegration {
             .addChatMessage(new ChatComponentText("§aTaskNH: task \"" + title + "\" created."));
     }
 
-    /** Returns a single item copy of the quest icon, NBT included, or null when the quest has none. */
+    /** Returns a single item copy of a quest stack, NBT included, or null when there is none. */
     private static ItemStack toIconStack(BigItemStack iconStack) {
         if (iconStack == null) return null;
         ItemStack base = iconStack.getBaseStack();

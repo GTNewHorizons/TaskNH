@@ -300,6 +300,9 @@ public class TaskNHCommand extends CommandBase {
                         JsonObject so = new JsonObject();
                         so.addProperty("title", s.title);
                         so.addProperty("checked", s.checked);
+                        if (s.trackItem != null) so.addProperty("trackStack", stackToJson(s.trackItem));
+                        if (s.trackItemCount > 1) so.addProperty("trackItemCount", s.trackItemCount);
+                        if (!s.trackOre.isEmpty()) so.addProperty("trackOre", s.trackOre);
                         checklist.add(so);
                     }
                     obj.add("checklist", checklist);
@@ -435,13 +438,23 @@ public class TaskNHCommand extends CommandBase {
                         if (obj.has(checklistKey)) {
                             for (JsonElement se : obj.getAsJsonArray(checklistKey)) {
                                 JsonObject so = se.getAsJsonObject();
-                                t.checklist.add(
-                                    new com.eldrinn.tasknh.data.ChecklistItem(
-                                        UUID.randomUUID(),
-                                        so.get("title")
-                                            .getAsString(),
-                                        so.has("checked") && so.get("checked")
-                                            .getAsBoolean()));
+                                com.eldrinn.tasknh.data.ChecklistItem item = new com.eldrinn.tasknh.data.ChecklistItem(
+                                    UUID.randomUUID(),
+                                    so.get("title")
+                                        .getAsString(),
+                                    so.has("checked") && so.get("checked")
+                                        .getAsBoolean());
+                                if (so.has("trackStack")) item.trackItem = stackFromJson(
+                                    so.get("trackStack")
+                                        .getAsString());
+                                if (so.has("trackItemCount")) item.trackItemCount = Task.clampTrackItemCount(
+                                    so.get("trackItemCount")
+                                        .getAsInt());
+                                // The packet reads at most 256 characters, so a longer name would break the sync.
+                                if (so.has("trackOre")) item.trackOre = so.get("trackOre")
+                                    .getAsString();
+                                if (item.trackOre.length() > 256) item.trackOre = "";
+                                t.checklist.add(item);
                             }
                         }
                         data.addTask(team.getTeamId(), t);
