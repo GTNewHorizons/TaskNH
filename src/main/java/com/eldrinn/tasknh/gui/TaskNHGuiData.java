@@ -34,6 +34,10 @@ public class TaskNHGuiData {
     /** Whether the tracked item count field is shown under the slot. Toggled by middle-clicking the slot. */
     public boolean trackCountExpanded = false;
 
+    /** Checklist item whose count field is shown under its row, or null. Toggled by middle-clicking its slot. */
+    @Nullable
+    public UUID checklistCountExpanded = null;
+
     /** Scroll state of the task list, kept across rebuilds. */
     public final ScrollMemoryList.Memory listScroll = new ScrollMemoryList.Memory();
 
@@ -47,6 +51,7 @@ public class TaskNHGuiData {
         this.createMode = false;
         this.detailScroll.reset();
         this.trackCountExpanded = false;
+        this.checklistCountExpanded = null;
     }
 
     public void enterCreateMode() {
@@ -54,6 +59,7 @@ public class TaskNHGuiData {
         this.createMode = true;
         this.detailScroll.reset();
         this.trackCountExpanded = false;
+        this.checklistCountExpanded = null;
     }
 
     public void clear() {
@@ -61,5 +67,6 @@ public class TaskNHGuiData {
         this.createMode = false;
         this.detailScroll.reset();
         this.trackCountExpanded = false;
+        this.checklistCountExpanded = null;
     }
 }

@@ -15,8 +15,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ChatComponentTranslation;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
+import net.minecraftforge.oredict.OreDictionary;
 
 import com.eldrinn.tasknh.config.TaskNHConfig;
+import com.eldrinn.tasknh.data.ChecklistItem;
 import com.eldrinn.tasknh.data.Task;
 import com.eldrinn.tasknh.data.TaskStatus;
 import com.eldrinn.tasknh.network.SyncAllTasksPacket;
@@ -29,10 +31,10 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 
 /**
- * Completes tasks whose tracked item shows up in a team member's inventory.
+ * Completes tasks and checks checklist items whose tracked item shows up in a team member's inventory.
  * Inventory changes are reported by a container listener and checked once on the next server tick,
  * so nothing is scanned while inventories stay untouched.
- * Completion is one-way: spending the item afterwards does not reopen the task.
+ * Completion is one-way: spending the item afterwards does not reopen the task or uncheck the item.
  */
 public class ItemTrackHandler {
 
@@ -95,17 +97,34 @@ public class ItemTrackHandler {
         Team team = TeamManager.getTeamByPlayer(player.getUniqueID());
         if (team == null) return;
 
-        boolean anyCompleted = false;
+        boolean anyChanged = false;
         for (Task task : new ArrayList<>(data.getTeamTasks(team.getTeamId()))) {
             if (task.status == TaskStatus.DONE) continue;
-            if (task.trackItem == null) continue;
-            if (countItem(player, task.trackItem) < Math.max(1, task.trackItemCount)) continue;
 
-            task.status = TaskStatus.DONE;
+            // A checked item is never looked at again, so each one fires once and spending the item
+            // afterwards leaves it checked, same as a completed task.
+            boolean anyChecked = false;
+            for (ChecklistItem item : task.checklist) {
+                if (item.checked || item.trackItem == null) continue;
+                if (countItem(player, item.trackItem, item.trackOre) < item.trackItemCount) continue;
+                item.checked = true;
+                anyChecked = true;
+                if (TaskNHConfig.announceAutoComplete) {
+                    player
+                        .addChatMessage(new ChatComponentTranslation("tasknh.chat.auto_check", item.title, task.title));
+                }
+            }
+
+            boolean completed = (task.trackItem != null
+                && countItem(player, task.trackItem, "") >= Math.max(1, task.trackItemCount))
+                || (anyChecked && task.shouldCompleteOnChecklist());
+            if (!completed && !anyChecked) continue;
+
+            if (completed) task.status = TaskStatus.DONE;
             data.updateTask(team.getTeamId(), task);
-            anyCompleted = true;
+            anyChanged = true;
 
-            if (TaskNHConfig.announceAutoComplete) {
+            if (completed && TaskNHConfig.announceAutoComplete) {
                 for (EntityPlayerMP p : MinecraftServer.getServer()
                     .getConfigurationManager().playerEntityList) {
                     if (team.getMembers()
@@ -120,21 +139,36 @@ public class ItemTrackHandler {
             }
         }
 
-        if (anyCompleted) {
+        if (anyChanged) {
             TaskNHNetwork
                 .sendToTeamMembers(team.getMembers(), new SyncAllTasksPacket(data.getTeamTasks(team.getTeamId())));
         }
     }
 
-    /** Counts the tracked item across one player's main inventory. No OreDictionary. */
-    private static int countItem(EntityPlayerMP player, ItemStack trackItem) {
+    /**
+     * Counts the tracked item across one player's main inventory. With an OreDictionary name, any item
+     * registered under it counts; without one, only an exact match does.
+     */
+    private static int countItem(EntityPlayerMP player, ItemStack trackItem, String ore) {
         // Reading the name costs a registry lookup for a seed, so the tracked one is read once.
         String trackedName = trackItem.getUnlocalizedName();
         int found = 0;
         for (ItemStack stack : player.inventory.mainInventory) {
-            if (stack != null && matches(stack, trackItem, trackedName)) found += stack.stackSize;
+            if (stack == null) continue;
+            if (ore.isEmpty() ? matches(stack, trackItem, trackedName) : hasOre(stack, ore)) found += stack.stackSize;
         }
         return found;
+    }
+
+    /**
+     * Compares names rather than ids: OreDictionary.getOreID registers any name it does not know,
+     * so asking it about a tag no mod added would create an empty one.
+     */
+    private static boolean hasOre(ItemStack stack, String ore) {
+        for (int id : OreDictionary.getOreIDs(stack)) {
+            if (ore.equals(OreDictionary.getOreName(id))) return true;
+        }
+        return false;
     }
 
     /**

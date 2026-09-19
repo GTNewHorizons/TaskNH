@@ -84,7 +84,7 @@ public class Task {
      * which would throw the first time anything draws or names it, so that reads as no item at all.
      */
     @Nullable
-    private static ItemStack readStack(PacketBuffer buf) throws IOException {
+    static ItemStack readStack(PacketBuffer buf) throws IOException {
         ItemStack stack = buf.readItemStackFromBuffer();
         return stack != null && stack.getItem() != null ? stack : null;
     }

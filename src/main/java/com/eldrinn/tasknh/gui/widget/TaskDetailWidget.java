@@ -1,6 +1,8 @@
 package com.eldrinn.tasknh.gui.widget;
 
 import java.util.UUID;
+import java.util.function.IntConsumer;
+import java.util.function.IntSupplier;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
@@ -296,39 +298,11 @@ public class TaskDetailWidget extends Flow {
 
         // Count field under the slot, opened by middle-clicking it and closed by Enter.
         if (data.trackCountExpanded) {
-            Flow countRow = Flow.row()
-                .size(W, ROW_H);
-            var countLabel = new TextWidget<>(t("tasknh.gui.detail.track_item_count"));
-            countLabel.size(W - COUNT_FIELD_W, EL_H);
-            countLabel.textAlign(Alignment.CenterLeft);
-            countRow.child(countLabel);
-            PlainTextField countField = new PlainTextField();
-            countField.size(COUNT_FIELD_W, EL_H);
-            countField.setTextColor(ColorUtils.textWhite.getColor());
-            countField.setNumbers(1, Task.MAX_TRACK_ITEM_COUNT);
-            // Plain integers only: the field accepts expressions by default, and those would be
-            // dropped by the parse below instead of reaching the task.
-            countField.acceptsExpressions(false);
-            countField.value(new StringValue.Dynamic(() -> String.valueOf(task.trackItemCount), val -> {
-                try {
-                    task.trackItemCount = Task.clampTrackItemCount(Integer.parseInt(val.trim()));
-                    sendUpdate();
-                } catch (NumberFormatException ignored) {}
-            }));
-            countField.onEnter(() -> {
-                // Read the text here: rebuilding the GUI drops the field before it syncs on focus loss.
-                try {
-                    task.trackItemCount = Task.clampTrackItemCount(
-                        Integer.parseInt(
-                            countField.getText()
-                                .trim()));
-                    sendUpdate();
-                } catch (NumberFormatException ignored) {}
-                data.trackCountExpanded = false;
-                TaskNHGui.open(data);
-            });
-            countRow.child(countField);
-            formList.child(countRow);
+            formList.child(
+                countRow(
+                    () -> task.trackItemCount,
+                    count -> task.trackItemCount = count,
+                    () -> data.trackCountExpanded = false));
         }
 
         // Assignees
@@ -417,8 +391,9 @@ public class TaskDetailWidget extends Flow {
             formList.child(buildChildTaskList());
         }
 
-        // Checklist header: [label fills rest] [auto-complete label 72] [4px gap] [toggle EL_H]
-        final int DONE_LABEL_W = 72;
+        // Checklist header: [label fills rest] [auto-complete label 100] [4px gap] [toggle EL_H]
+        // Wider than the map label: the Russian "Auto-done:" wrapped its colon at 72.
+        final int DONE_LABEL_W = 100;
         final int DONE_GAP = 4;
         Flow checklistHeader = Flow.row()
             .size(W, ROW_H);
@@ -613,6 +588,13 @@ public class TaskDetailWidget extends Flow {
 
         for (ChecklistItem item : task.checklist) {
             col.child(checklistRow(item, col));
+            if (item.id.equals(data.checklistCountExpanded)) {
+                col.child(
+                    countRow(
+                        () -> item.trackItemCount,
+                        count -> item.trackItemCount = count,
+                        () -> data.checklistCountExpanded = null));
+            }
         }
 
         // Add checklist row
@@ -658,7 +640,7 @@ public class TaskDetailWidget extends Flow {
     private Flow checklistRow(ChecklistItem item, Flow col) {
         final int W = TaskNHGui.LEFT_WIDTH - 2 * TaskNHGui.PADDING - SCROLLBAR_W;
         var itemTitle = new TextWidget<>(item.title);
-        itemTitle.size(W - EL_H * 2 - 4, EL_H);
+        itemTitle.size(W - EL_H * 3 - 4, EL_H);
         itemTitle.textAlign(Alignment.CenterLeft);
         itemTitle.marginLeft(4);
 
@@ -675,18 +657,105 @@ public class TaskDetailWidget extends Flow {
                 }))
                 .overlay(true, GuiTextures.CHECKMARK));
         row.child(itemTitle);
+
+        // Tracked item — checks this item once a member carries it. Same controls as the task's slot.
+        IconSlotWidget slot = new IconSlotWidget(new IconSlotWidget.ItemHolder() {
+
+            @Override
+            public ItemStack get() {
+                return item.trackItem;
+            }
+
+            @Override
+            public void set(ItemStack v) {
+                item.trackItem = v;
+                // A stack set by hand names one item, so a tag from the quest import no longer applies.
+                item.trackOre = "";
+            }
+
+            @Override
+            public int getCount() {
+                return item.trackItemCount;
+            }
+
+            @Override
+            public void setCount(int count) {
+                item.trackItemCount = Task.clampTrackItemCount(count);
+            }
+        }, () -> {
+            sendUpdate();
+            TaskNHGui.open(data);
+        }, "tasknh.gui.detail.checklist_track_hint").onMiddleClick(() -> {
+            // A count without a tracked item means nothing, so the field only opens on a filled slot.
+            if (item.trackItem == null) return;
+            data.checklistCountExpanded = item.id.equals(data.checklistCountExpanded) ? null : item.id;
+            TaskNHGui.open(data);
+        });
+        if (!item.trackOre.isEmpty()) {
+            slot.addTooltipLine(IKey.lang("tasknh.gui.detail.checklist_track_ore", item.trackOre));
+        }
+        row.child(slot.size(EL_H, EL_H));
+
         row.child(
             new ButtonWidget<>().size(EL_H, EL_H)
                 .overlay(ICON_REMOVE)
                 .onMousePressed(btn -> {
                     if (btn != 0) return false;
                     task.checklist.remove(item);
+                    sendUpdate();
+                    if (item.id.equals(data.checklistCountExpanded)) {
+                        // The count field sits in its own row under this one, so rebuild to drop both.
+                        data.checklistCountExpanded = null;
+                        TaskNHGui.open(data);
+                        return true;
+                    }
                     col.remove(row);
                     col.scheduleResize();
-                    sendUpdate();
                     return true;
                 }));
         return row;
+    }
+
+    /**
+     * Count field for a tracked item, shown under its slot. Enter saves the count, runs close and rebuilds.
+     * The count is clamped before it reaches the setter.
+     */
+    private Flow countRow(IntSupplier getCount, IntConsumer setCount, Runnable close) {
+        final int W = TaskNHGui.LEFT_WIDTH - 2 * TaskNHGui.PADDING - SCROLLBAR_W;
+        Flow countRow = Flow.row()
+            .size(W, ROW_H);
+        var countLabel = new TextWidget<>(t("tasknh.gui.detail.track_item_count"));
+        countLabel.size(W - COUNT_FIELD_W, EL_H);
+        countLabel.textAlign(Alignment.CenterLeft);
+        countRow.child(countLabel);
+        PlainTextField countField = new PlainTextField();
+        countField.size(COUNT_FIELD_W, EL_H);
+        countField.setTextColor(ColorUtils.textWhite.getColor());
+        countField.setNumbers(1, Task.MAX_TRACK_ITEM_COUNT);
+        // Plain integers only: the field accepts expressions by default, and those would be
+        // dropped by the parse below instead of reaching the task.
+        countField.acceptsExpressions(false);
+        countField.value(new StringValue.Dynamic(() -> String.valueOf(getCount.getAsInt()), val -> {
+            try {
+                setCount.accept(Task.clampTrackItemCount(Integer.parseInt(val.trim())));
+                sendUpdate();
+            } catch (NumberFormatException ignored) {}
+        }));
+        countField.onEnter(() -> {
+            // Read the text here: rebuilding the GUI drops the field before it syncs on focus loss.
+            try {
+                setCount.accept(
+                    Task.clampTrackItemCount(
+                        Integer.parseInt(
+                            countField.getText()
+                                .trim())));
+                sendUpdate();
+            } catch (NumberFormatException ignored) {}
+            close.run();
+            TaskNHGui.open(data);
+        });
+        countRow.child(countField);
+        return countRow;
     }
 
     private TaskLocation ensureLocation() {
