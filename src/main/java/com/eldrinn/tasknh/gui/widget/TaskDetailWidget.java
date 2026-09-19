@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 
+import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.drawable.GuiTextures;
 import com.cleanroommc.modularui.drawable.UITexture;
 import com.cleanroommc.modularui.utils.Alignment;
@@ -416,10 +417,33 @@ public class TaskDetailWidget extends Flow {
             formList.child(buildChildTaskList());
         }
 
-        // Checklist
+        // Checklist header: [label fills rest] [auto-complete label 72] [4px gap] [toggle EL_H]
+        final int DONE_LABEL_W = 72;
+        final int DONE_GAP = 4;
+        Flow checklistHeader = Flow.row()
+            .size(W, ROW_H);
         var checklistLabel = new TextWidget<>(t("tasknh.gui.detail.checklist"));
-        checklistLabel.size(W, 14);
-        formList.child(checklistLabel);
+        checklistLabel.size(W - DONE_LABEL_W - DONE_GAP - EL_H, EL_H);
+        checklistLabel.textAlign(Alignment.CenterLeft);
+        checklistHeader.child(checklistLabel);
+        var completeLabel = new TextWidget<>(t("tasknh.gui.detail.complete_on_checklist"));
+        completeLabel.size(DONE_LABEL_W, EL_H);
+        completeLabel.textAlign(Alignment.CenterRight);
+        completeLabel.addTooltipLine(IKey.lang("tasknh.gui.detail.complete_on_checklist_hint"));
+        checklistHeader.child(completeLabel);
+        var completeSpacer = new TextWidget<>("");
+        completeSpacer.size(DONE_GAP, EL_H);
+        checklistHeader.child(completeSpacer);
+        checklistHeader.child(
+            new ToggleButton().size(EL_H, EL_H)
+                .value(new BoolValue.Dynamic(() -> task.completeOnChecklist, val -> {
+                    task.completeOnChecklist = val;
+                    // Turning the flag on over an already finished checklist closes the task right away.
+                    if (task.shouldCompleteOnChecklist()) task.status = TaskStatus.DONE;
+                    sendUpdate();
+                }))
+                .overlay(true, GuiTextures.CHECKMARK));
+        formList.child(checklistHeader);
         formList.child(buildChecklist());
     }
 
@@ -644,6 +668,9 @@ public class TaskDetailWidget extends Flow {
             new ToggleButton().size(EL_H, EL_H)
                 .value(new BoolValue.Dynamic(() -> item.checked, val -> {
                     item.checked = val;
+                    // The server decides this too, but its answer only reaches the cache: the sync for an
+                    // edit we just sent skips the rebuild, so the open panel would keep the old status.
+                    if (task.shouldCompleteOnChecklist()) task.status = TaskStatus.DONE;
                     sendUpdate();
                 }))
                 .overlay(true, GuiTextures.CHECKMARK));
