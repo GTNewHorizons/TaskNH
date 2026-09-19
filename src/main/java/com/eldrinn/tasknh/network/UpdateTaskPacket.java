@@ -12,6 +12,7 @@ import net.minecraft.util.ChatComponentTranslation;
 
 import com.eldrinn.tasknh.data.AssignedPlayer;
 import com.eldrinn.tasknh.data.Task;
+import com.eldrinn.tasknh.data.TaskStatus;
 import com.eldrinn.tasknh.storage.TaskNHWorldData;
 import com.gtnewhorizon.gtnhlib.network.base.IPacket;
 import com.gtnewhorizon.gtnhlib.teams.Team;
@@ -46,6 +47,13 @@ public class UpdateTaskPacket implements IPacket {
         TaskNHWorldData data = TaskNHWorldData.get();
         Task oldTask = data.getTask(team.getTeamId(), task.id);
         if (oldTask == null) return null; // unknown task
+
+        // Decided here rather than on the client, so item tracking checking the last box closes the task
+        // through the same path. Runs before the reorder below, which reads the status the task ends up with.
+        if (task.status != TaskStatus.DONE && task.shouldCompleteOnChecklist()) {
+            task.status = TaskStatus.DONE;
+        }
+
         if (oldTask.status != task.status) {
             // Positions are numbered within one tab, so a task keeping its number while moving to
             // another tab would land at an arbitrary spot there. It goes to the end instead.

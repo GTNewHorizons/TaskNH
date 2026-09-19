@@ -101,7 +101,7 @@ The window has two pages. Click a task row to open its detail page; use the back
 - **Location**: X/Y/Z coordinate fields; `Pos` button captures your current position; `Show on map` toggle controls the Navigator marker
 - **Auto-complete on item**: drag an item from NEI onto the slot; the task completes once one team member carries it. The amount comes from the quantity field in NEI and shows in the corner of the slot; middle-click the slot to type it instead. It tops out at 2304, a full inventory of stacks of 64. An item counts when its id, meta and internal name match the one on the slot, so two CropsNH seeds of different plants stay apart while their growth values are ignored, and an unanalyzed seed carries no plant name and waits for a scan. A mod that folds a changing state into that name, a tool mode for instance, makes the item stop counting once the player switches it
 - **Subtasks**: child tasks of this task; click one to open it, use `Parent:` at the top of a subtask to go back. A subtask has no subtasks of its own
-- **Checklist**: check off items or remove them; add new ones with the `+` button
+- **Checklist**: check off items or remove them; add new ones with the `+` button. With Auto-done on, the task completes once every item is checked; unchecking one later does not reopen it
 
 The search bar, the subtask and checklist add fields and the X/Y/Z fields hold up to 256 characters each.
 
@@ -138,6 +138,7 @@ Tasks are stored as a JSON array. Each object supports the following fields:
     "iconStack": "{id:\"tconstruct:smeltery_controller\",Count:1b,Damage:0s}",
     "trackStack": "{id:\"minecraft:brick\",Count:1b,Damage:0s}",
     "trackItemCount": 64,
+    "completeOnChecklist": true,
     "showOnMap": true,
     "location": { "x": 100, "y": 64, "z": -200, "dimension": 0, "label": "" },
     "checklist": [
@@ -152,6 +153,8 @@ Valid `status` values: `OPEN`, `IN_PROGRESS`, `DONE`.
 `checklist` was named `subtasks` before subtasks became real tasks; the old key is still accepted on import.
 
 `iconStack` and `trackStack` hold the item as NBT text, so items that differ only by NBT stay apart. They were `iconItem` and `trackItem`, a `modid:item:meta` string, and those keys are still accepted on import. An item tag holding a byte array or a quoted string does not survive the round trip, since NBT text has no escaping for either.
+
+`completeOnChecklist` closes the task once every checklist item is checked. The export leaves it out when it is off.
 
 `trackItemCount` is how many of `trackStack` a member has to carry. The export leaves it out when the task asks for one, and an import clamps it to 1 - 2304.
 

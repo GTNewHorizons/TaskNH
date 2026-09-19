@@ -40,6 +40,8 @@ public class Task {
      * in a single byte and could not hold the range this allows.
      */
     public int trackItemCount = 1;
+    /** Closes the task once every checklist item is checked, however it got checked. Off by default. */
+    public boolean completeOnChecklist = false;
     public boolean showOnMap = false;
     /** Parent task id, or null for a root task. Only one nesting level is allowed. */
     @Nullable
@@ -58,6 +60,18 @@ public class Task {
         this.location = null;
         this.checklist = new ArrayList<>();
         this.comments = new ArrayList<>();
+    }
+
+    /**
+     * Whether {@link #completeOnChecklist} should close this task now. An empty checklist never closes it:
+     * every item is checked in the trivial sense, which would complete a task the moment the flag is set.
+     */
+    public boolean shouldCompleteOnChecklist() {
+        if (!completeOnChecklist || checklist.isEmpty()) return false;
+        for (ChecklistItem item : checklist) {
+            if (!item.checked) return false;
+        }
+        return true;
     }
 
     /** Holds a count inside the range {@link #readFromBuf} accepts. Every path that sets one goes through here. */
@@ -108,6 +122,7 @@ public class Task {
         if (iconItem != null) tag.setTag("iconStack", iconItem.writeToNBT(new NBTTagCompound()));
         if (trackItem != null) tag.setTag("trackStack", trackItem.writeToNBT(new NBTTagCompound()));
         if (trackItemCount > 1) tag.setInteger("trackItemCount", trackItemCount);
+        tag.setBoolean("completeOnChecklist", completeOnChecklist);
         tag.setBoolean("showOnMap", showOnMap);
         tag.setInteger("order", order);
         if (parentId != null) {
@@ -151,6 +166,8 @@ public class Task {
         // Tasks saved before the count existed track a single item. A save edited by hand can hold
         // anything, and an out of range count would later fail to decode on the client, so clamp on load.
         task.trackItemCount = tag.hasKey("trackItemCount") ? clampTrackItemCount(tag.getInteger("trackItemCount")) : 1;
+        // Tasks saved before the flag existed have no key, which reads as off.
+        task.completeOnChecklist = tag.getBoolean("completeOnChecklist");
         task.showOnMap = tag.getBoolean("showOnMap");
         // Worlds saved before manual ordering have no key, so everything starts at 0 and keeps its old order.
         task.order = tag.getInteger("order");
@@ -189,6 +206,7 @@ public class Task {
         buf.writeItemStackToBuffer(iconItem);
         buf.writeItemStackToBuffer(trackItem);
         buf.writeInt(trackItemCount);
+        buf.writeBoolean(completeOnChecklist);
         buf.writeBoolean(showOnMap);
         buf.writeInt(order);
         buf.writeBoolean(parentId != null);
@@ -231,6 +249,7 @@ public class Task {
         if (trackCount < 1 || trackCount > MAX_TRACK_ITEM_COUNT)
             throw new IOException("Invalid track item count: " + trackCount);
         task.trackItemCount = trackCount;
+        task.completeOnChecklist = buf.readBoolean();
         task.showOnMap = buf.readBoolean();
         task.order = buf.readInt();
         if (buf.readBoolean()) {
