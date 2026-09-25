@@ -13,7 +13,7 @@ A task management mod for Minecraft 1.7.10 (GregTech: New Horizons). TaskNH lets
 - **Subtasks**: attach child tasks to a task, one nesting level deep; a subtask is a full task with its own status, assignees and location. Fold the done subtasks or all of them under their parent
 - **Manual order**: drag a task to move it, with its subtasks; arrows reorder a subtask under its parent. The whole team sees the same order
 - **Checklist**: add checklist items to any task; check them off individually
-- **HUD**: pin up to 5 tasks to an on-screen HUD with their checklists; position, scale and background are configurable
+- **HUD**: pin up to 5 tasks to an on-screen HUD with their checklists, with the tracked item's icon and how many you carry; position, scale and background are configurable
 - **Item tracking**: drag an item onto the task's tracking slot and the task closes itself once a team member carries it, in the amount the slot asks for
 - **Assignees**: assign any online player to a task from the GUI or via command, and nudge one of them with a reminder in chat
 - **Map markers**: pin a world coordinate to a task and display it on the map (requires Navigator)
@@ -91,7 +91,7 @@ The window has two pages. Click a task row to open its detail page; use the back
 - The search button (magnifier icon) expands a live search field; click again to collapse and clear
 - Drag a task by its row to move it up or down; its subtasks travel with it and the new order reaches the whole team. A subtask moves among its siblings with the arrows on its row
 - A task with subtasks gets an arrow button left of the star. A click cycles through all shown, done hidden and all hidden, skipping the middle step when it changes nothing; the tooltip names the current state and counts the done subtasks. Each task keeps its choice after a restart
-- `+ New Task` opens a blank create form
+- `+ New Task` opens a short form with the icon, title and description. `Create Task` or Enter in the title creates the task and opens the full form; the button stays dimmed until the title has text
 - The buttons in the bottom-right open the HUD position settings and toggle the theme
 
 **Page 2 - task detail**
@@ -101,9 +101,9 @@ The window has two pages. Click a task row to open its detail page; use the back
 - **Pin button** (top-right): pins the task to the HUD, up to 5 at a time; subtasks cannot be pinned
 - **Description**: free-text field, up to 512 characters
 - **Status**: toggle between To do / Doing / Done
-- **Assignees**: click any online player to assign or unassign them; the picker stays closed until the task has a title. Each assignee gets a `Remind` button that sends them a chat message with a link to the task
+- **Assignees**: click any online player to assign or unassign them. Each assignee gets a `Remind` button that sends them a chat message with a link to the task. When nobody else is in your team, a hint points to `/gtnhteam invite`. A singleplayer world that isn't open to LAN hides the section, unless the task already has assignees
 - **Location**: X/Y/Z coordinate fields; `Pos` button captures your current position; `Show on map` toggle controls the Navigator marker
-- **Auto-complete on item**: drag an item from NEI onto the slot; the task completes once one team member carries it. The amount comes from the quantity field in NEI and shows in the corner of the slot; middle-click the slot to type it instead. It tops out at 2304, a full inventory of stacks of 64. An item counts when its id, meta and internal name match the one on the slot, so two CropsNH seeds of different plants stay apart while their growth values are ignored, and an unanalyzed seed carries no plant name and waits for a scan. A mod that folds a changing state into that name, a tool mode for instance, makes the item stop counting once the player switches it
+- **Auto-complete on item**: drag an item from NEI onto the slot; the task completes once one team member carries it. The amount comes from the quantity field in NEI and shows in the corner of the slot; middle-click the slot to type it instead. The field takes expressions such as `64*8` or `2k`, right-click clears it, and leaving it empty keeps the old amount. It tops out at 2304, a full inventory of stacks of 64. An item counts when its id, meta and internal name match the one on the slot, so two CropsNH seeds of different plants stay apart while their growth values are ignored, and an unanalyzed seed carries no plant name and waits for a scan. A mod that folds a changing state into that name, a tool mode for instance, makes the item stop counting once the player switches it
 - **Subtasks**: child tasks of this task; click one to open it, use `Parent:` at the top of a subtask to go back. A subtask has no subtasks of its own
 - **Checklist**: check off items or remove them; add new ones with the `+` button. With Auto-done on, the task completes once every item is checked; unchecking one later does not reopen it. Each item has its own item slot that works like Auto-complete on item and checks the item instead of completing the task; the player who carries it gets a chat message. An item imported from a quest that asks for an OreDictionary tag accepts any item under that tag, and setting a slot by hand drops the tag
 
@@ -111,7 +111,7 @@ The search bar, the subtask and checklist add fields and the X/Y/Z fields hold u
 
 ## HUD
 
-Pinned tasks are drawn on screen with their checklists. Tasks in progress come first, then open and done ones, each group in the order of the task list. Open the HUD settings from the button in the bottom-right of the task list: drag the handle to reposition, adjust scale, background and how many tasks and checklist lines are shown, or turn the HUD off. The client keeps pins and subtask folds separately for each world and shares the HUD settings between them, all in the mod config folder.
+Pinned tasks are drawn on screen with their checklists. A task or checklist item with a tracked item shows its icon and how many of it you carry, like 5/10. The count covers only your own inventory, since the mod checks each member's inventory on its own. Tasks in progress come first, then open and done ones, each group in the order of the task list. Open the HUD settings from the button in the bottom-right of the task list: drag the handle to reposition, adjust scale, background and how many tasks and checklist lines are shown, or turn the HUD off. The client keeps pins and subtask folds separately for each world and shares the HUD settings between them, all in the mod config folder.
 
 ## Config
 
