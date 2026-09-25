@@ -46,7 +46,7 @@ public class PlayerLoginHandler {
         sendLoginNotifications(player, team, data);
     }
 
-    private static SyncTeamMembersPacket buildTeamMembersPacket(Team team) {
+    static SyncTeamMembersPacket buildTeamMembersPacket(Team team) {
         List<PlayerEntry> entries = new ArrayList<>();
 
         Map<UUID, String> onlineNames = new LinkedHashMap<>();
