@@ -12,6 +12,7 @@ tasknh.gui.detail.description=Description:
 tasknh.gui.detail.status=Status:
 tasknh.gui.detail.assignees=Assignees:
 tasknh.gui.detail.assignees.needs_title=Enter a task title first
+tasknh.gui.detail.assignees.solo_team=Only you are in this team. Invite players with /gtnhteam invite <name>
 tasknh.gui.detail.location=Location:
 tasknh.gui.detail.subtasks=Subtasks:
 tasknh.gui.detail.parent=Parent:
