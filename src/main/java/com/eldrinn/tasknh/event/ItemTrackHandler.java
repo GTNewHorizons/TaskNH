@@ -106,7 +106,8 @@ public class ItemTrackHandler {
             boolean anyChecked = false;
             for (ChecklistItem item : task.checklist) {
                 if (item.checked || item.trackItem == null) continue;
-                if (countItem(player, item.trackItem, item.trackOre) < item.trackItemCount) continue;
+                if (countItem(player.inventory.mainInventory, item.trackItem, item.trackOre) < item.trackItemCount)
+                    continue;
                 item.checked = true;
                 anyChecked = true;
                 if (TaskNHConfig.announceAutoComplete) {
@@ -116,7 +117,7 @@ public class ItemTrackHandler {
             }
 
             boolean completed = (task.trackItem != null
-                && countItem(player, task.trackItem, "") >= Math.max(1, task.trackItemCount))
+                && countItem(player.inventory.mainInventory, task.trackItem, "") >= Math.max(1, task.trackItemCount))
                 || (anyChecked && task.shouldCompleteOnChecklist());
             if (!completed && !anyChecked) continue;
 
@@ -148,12 +149,13 @@ public class ItemTrackHandler {
     /**
      * Counts the tracked item across one player's main inventory. With an OreDictionary name, any item
      * registered under it counts; without one, only an exact match does.
+     * The HUD calls it on the client too, so the count it shows is the one checked here.
      */
-    private static int countItem(EntityPlayerMP player, ItemStack trackItem, String ore) {
+    public static int countItem(ItemStack[] mainInventory, ItemStack trackItem, String ore) {
         // Reading the name costs a registry lookup for a seed, so the tracked one is read once.
         String trackedName = trackItem.getUnlocalizedName();
         int found = 0;
-        for (ItemStack stack : player.inventory.mainInventory) {
+        for (ItemStack stack : mainInventory) {
             if (stack == null) continue;
             if (ore.isEmpty() ? matches(stack, trackItem, trackedName) : hasOre(stack, ore)) found += stack.stackSize;
         }
