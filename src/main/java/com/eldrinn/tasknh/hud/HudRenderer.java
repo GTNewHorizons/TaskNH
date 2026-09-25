@@ -1,6 +1,8 @@
 package com.eldrinn.tasknh.hud;
 
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -32,6 +34,14 @@ import cpw.mods.fml.relauncher.SideOnly;
 public class HudRenderer {
 
     private static final RenderItem RENDER_ITEM = new RenderItem();
+
+    /**
+     * Carried counts by tracked stack, valid while the inventory matches the snapshot. Keyed by identity: a
+     * tracked stack belongs to one task or checklist item, so it always comes with the same OreDictionary name.
+     */
+    private static final Map<ItemStack, Integer> COUNTS = new IdentityHashMap<>();
+    private static ItemStack[] snapshotStacks = new ItemStack[0];
+    private static int[] snapshotSizes = new int[0];
 
     private static final int MAX_BLOCK_WIDTH = 160;
     private static final int LINE_H = 10;
@@ -97,6 +107,8 @@ public class HudRenderer {
      * Used by HudSettingsScreen to position the drag handle.
      */
     public static int[] computeHudPosition(PinnedTasksConfig cfg, int sw, int sh, FontRenderer fr, List<Task> pinned) {
+        // Every frame starts here, both on the HUD and on the settings screen, so the counts are checked once.
+        refreshCounts();
         int blockW = maxBlockWidth(pinned, fr, cfg);
         int totalH = totalHeight(pinned, cfg, fr);
         int x = anchorX(cfg.getAnchor(), sw, blockW) + cfg.getOffsetX();
@@ -238,8 +250,41 @@ public class HudRenderer {
      * the player still has to gather.
      */
     private static String countText(ItemStack track, String ore, int need) {
-        int have = ItemTrackHandler.countItem(Minecraft.getMinecraft().thePlayer.inventory.mainInventory, track, ore);
+        Integer have = COUNTS.get(track);
+        if (have == null) {
+            have = ItemTrackHandler.countItem(Minecraft.getMinecraft().thePlayer.inventory.mainInventory, track, ore);
+            COUNTS.put(track, have);
+        }
         return have + "/" + need;
+    }
+
+    /**
+     * Drops the cached counts once the inventory differs from the snapshot they were taken from. Comparing the
+     * stacks is far cheaper than counting: counting reads item names and OreDictionary ids for every slot, and a
+     * frame asks for each count several times, for the width, the height and the drawing.
+     * Each slot update from the server brings a new stack, and a size change on the client keeps the stack,
+     * so the reference and the size cover both.
+     */
+    private static void refreshCounts() {
+        ItemStack[] inventory = Minecraft.getMinecraft().thePlayer.inventory.mainInventory;
+        boolean changed = inventory.length != snapshotStacks.length;
+        for (int i = 0; !changed && i < inventory.length; i++) {
+            ItemStack stack = inventory[i];
+            changed = stack != snapshotStacks[i] || (stack != null && stack.stackSize != snapshotSizes[i]);
+        }
+        // Task syncs replace the tracked stacks, so stale keys pile up until the inventory changes. The cap
+        // keeps a long idle session from growing the map.
+        if (!changed && COUNTS.size() < 256) return;
+
+        COUNTS.clear();
+        if (snapshotStacks.length != inventory.length) {
+            snapshotStacks = new ItemStack[inventory.length];
+            snapshotSizes = new int[inventory.length];
+        }
+        for (int i = 0; i < inventory.length; i++) {
+            snapshotStacks[i] = inventory[i];
+            snapshotSizes[i] = inventory[i] != null ? inventory[i].stackSize : 0;
+        }
     }
 
     static int totalHeight(List<Task> pinned, PinnedTasksConfig cfg, FontRenderer fr) {
