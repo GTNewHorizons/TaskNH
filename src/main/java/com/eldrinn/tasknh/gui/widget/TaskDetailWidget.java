@@ -849,7 +849,7 @@ public class TaskDetailWidget extends Flow {
             .tooltipDynamic(tip -> {
                 if (task.title.trim()
                     .isEmpty()) {
-                    tip.addLine(t("tasknh.gui.detail.assignees.needs_title"));
+                    tip.addLine(t("tasknh.gui.detail.needs_title"));
                 }
             })
             // The title changes without a rebuild, so the cached tooltip would keep the old state.
