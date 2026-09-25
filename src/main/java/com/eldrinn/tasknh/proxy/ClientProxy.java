@@ -53,6 +53,11 @@ public class ClientProxy extends CommonProxy {
         if (com.eldrinn.tasknh.integration.BQIntegration.isAvailable()) {
             com.eldrinn.tasknh.integration.BetterQuestingIntegration.register();
         }
+        // Checked here rather than in the integration class, so that class never loads without the mods it uses.
+        if (com.cleanroommc.modularui.ModularUI.Mods.NEI.isLoaded()
+            && cpw.mods.fml.common.Loader.isModLoaded("blockrenderer6343")) {
+            com.eldrinn.tasknh.integration.MultiblockTaskIntegration.register();
+        }
     }
 
     @Override
