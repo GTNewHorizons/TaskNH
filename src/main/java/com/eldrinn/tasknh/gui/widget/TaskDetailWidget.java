@@ -325,7 +325,9 @@ public class TaskDetailWidget extends Flow {
         }
 
         // Assignees, hidden where nobody else can join: assigning and reminding would only ever point at you.
-        if (canHaveTeammates()) {
+        // A task that already has assignees, say from a session opened to LAN, keeps the section so they can
+        // be removed.
+        if (canHaveTeammates() || !task.assignees.isEmpty()) {
             var assigneesLabel = new TextWidget<>(t("tasknh.gui.detail.assignees"));
             assigneesLabel.size(W, 14);
             formList.child(assigneesLabel);
@@ -333,7 +335,7 @@ public class TaskDetailWidget extends Flow {
             // GTNHLib gives every player a solo team, so a picker showing only you means nobody else joined it yet.
             // An empty list, before the first sync, falls back to only you in the picker too.
             if (TaskNHClientCache.getTeamMembers()
-                .size() <= 1) {
+                .size() <= 1 && canHaveTeammates()) {
                 var soloHint = new TextWidget<>(t("tasknh.gui.detail.assignees.solo_team"));
                 soloHint.size(W, 20);
                 soloHint.textAlign(Alignment.CenterLeft);
