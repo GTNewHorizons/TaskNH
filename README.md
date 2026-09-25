@@ -22,6 +22,7 @@ A task management mod for Minecraft 1.7.10 (GregTech: New Horizons). TaskNH lets
 - **Dark and light themes**: toggle with the sun button in the bottom-right of the GUI
 - **Search**: expandable search bar filters the task list live by title or description
 - **Quest import**: create a task from a BetterQuesting quest via the quest context menu, with required items turned into checklist items that check themselves once a team member carries the item
+- **Multiblock import**: the + button on a multiblock's structure page in NEI creates a task with the controller as its icon and each part as a tracked checklist item, counted for the tier and channels you picked. Hatches are left out, since any tier fits their slot
 - **Permissions**: every subcommand has its own permission node, tunable through ServerUtilities ranks
 
 ## Requirements
@@ -34,6 +35,7 @@ A task management mod for Minecraft 1.7.10 (GregTech: New Horizons). TaskNH lets
 | Navigator *(optional)*           | 1.1.9+         |
 | NotEnoughItems GTNH *(optional)* | 2.8.105-GTNH+  |
 | BetterQuesting *(optional)*      | 3.8.84-GTNH+   |
+| BlockRenderer6343 *(optional)*   | 1.4.21+        |
 | ServerUtilities *(optional)*     | 2.4.9+         |
 
 Navigator is only required for map marker support. Without it the mod works normally and the Location section is still available for storing coordinates.
@@ -41,6 +43,8 @@ Navigator is only required for map marker support. Without it the mod works norm
 NEI is only required for the item slots: dragging an item onto one, opening its recipes with a left click, and the R and U hotkeys over it. Without NEI the slots stay visible and hold whatever a task already carries, but you cannot drop anything on them.
 
 BetterQuesting is only required for the quest context menu entry. Older BetterQuesting versions without the context menu API are detected on load and the integration is skipped.
+
+BlockRenderer6343 is only required for the multiblock button, which also needs NEI. Set the preview's Layer to All before pressing it, since a single layer lists only its own parts.
 
 ServerUtilities is only required for rank-based permissions. Without it, `reload`, `export` and `import` require OP and every other subcommand is open to all players.
 
