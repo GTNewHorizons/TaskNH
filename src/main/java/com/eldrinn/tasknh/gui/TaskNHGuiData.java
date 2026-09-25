@@ -44,6 +44,13 @@ public class TaskNHGuiData {
     /** Scroll state of the task detail form, kept across rebuilds. */
     public final ScrollMemoryList.Memory detailScroll = new ScrollMemoryList.Memory();
 
+    /** Detail scroll of the task a subtask was opened from, restored by the link back to it. */
+    public final ScrollMemoryList.Memory parentScroll = new ScrollMemoryList.Memory();
+
+    /** Task that {@link #parentScroll} belongs to, or null. */
+    @Nullable
+    public UUID parentScrollOwner = null;
+
     public final PagedWidget.Controller pageController = new PagedWidget.Controller();
 
     public void selectTask(UUID id) {
