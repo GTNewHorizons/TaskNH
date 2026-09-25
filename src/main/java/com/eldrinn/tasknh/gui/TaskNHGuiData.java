@@ -5,6 +5,7 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 
 import com.cleanroommc.modularui.widgets.PagedWidget;
+import com.eldrinn.tasknh.data.Task;
 import com.eldrinn.tasknh.data.TaskStatus;
 import com.eldrinn.tasknh.gui.widget.ScrollMemoryList;
 
@@ -24,6 +25,10 @@ public class TaskNHGuiData {
 
     /** True when "New Task" was clicked — right panel shows empty create form. */
     public boolean createMode = false;
+
+    /** The task being filled in create mode. Kept here so a rebuild, such as setting the icon, keeps the input. */
+    @Nullable
+    public Task draft = null;
 
     /** Current search query; empty string means no filter. */
     public String searchQuery = "";
@@ -56,6 +61,7 @@ public class TaskNHGuiData {
     public void selectTask(UUID id) {
         this.selectedTaskId = id;
         this.createMode = false;
+        this.draft = null;
         this.detailScroll.reset();
         this.trackCountExpanded = false;
         this.checklistCountExpanded = null;
@@ -64,6 +70,7 @@ public class TaskNHGuiData {
     public void enterCreateMode() {
         this.selectedTaskId = null;
         this.createMode = true;
+        this.draft = new Task(UUID.randomUUID(), "", "", TaskStatus.OPEN);
         this.detailScroll.reset();
         this.trackCountExpanded = false;
         this.checklistCountExpanded = null;
@@ -72,6 +79,7 @@ public class TaskNHGuiData {
     public void clear() {
         this.selectedTaskId = null;
         this.createMode = false;
+        this.draft = null;
         this.detailScroll.reset();
         this.trackCountExpanded = false;
         this.checklistCountExpanded = null;

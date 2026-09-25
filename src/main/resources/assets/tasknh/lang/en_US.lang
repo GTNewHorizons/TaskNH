@@ -9,6 +9,7 @@ tasknh.gui.tab.open=To do
 tasknh.gui.tab.in_progress=Doing
 tasknh.gui.tab.done=Done
 tasknh.gui.detail.description=Description:
+tasknh.gui.detail.create=Create Task
 tasknh.gui.detail.status=Status:
 tasknh.gui.detail.assignees=Assignees:
 tasknh.gui.detail.assignees.needs_title=Enter a task title first

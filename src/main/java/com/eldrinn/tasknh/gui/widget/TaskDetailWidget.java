@@ -8,8 +8,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 
+import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.drawable.DynamicDrawable;
 import com.cleanroommc.modularui.drawable.GuiTextures;
+import com.cleanroommc.modularui.drawable.Rectangle;
 import com.cleanroommc.modularui.drawable.UITexture;
 import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.value.BoolValue;
@@ -51,8 +54,6 @@ public class TaskDetailWidget extends Flow {
     private final TaskNHGuiData data;
     private final Task task;
     private final boolean isNew;
-    // Tracks whether CreateTaskPacket has been sent so subsequent edits use UpdateTaskPacket
-    private boolean created = false;
     private final ScrollMemoryList formList;
 
     public TaskDetailWidget(TaskNHGuiData data) {
@@ -69,7 +70,7 @@ public class TaskDetailWidget extends Flow {
         child(this.formList);
 
         if (data.createMode) {
-            this.task = new Task(UUID.randomUUID(), "", "", TaskStatus.OPEN);
+            this.task = data.draft;
             this.isNew = true;
             buildForm();
         } else if (data.selectedTaskId != null) {
@@ -142,6 +143,11 @@ public class TaskDetailWidget extends Flow {
             task.title = val;
             sendUpdate();
         }));
+        if (isNew) {
+            // The create button reads the title, so the title must be current while it is still being typed.
+            titleField.autoUpdateOnChange(true);
+            titleField.onEnter(this::createTask);
+        }
         header.child(titleField);
         if (!isNew) {
             header.child(
@@ -223,6 +229,13 @@ public class TaskDetailWidget extends Flow {
             sendUpdate();
         }));
         formList.child(descField);
+
+        // An unsaved task shows only what it needs to be created. The rest of the form, subtasks included,
+        // opens once the task exists, so nothing typed there waits on a title to reach the server.
+        if (isNew) {
+            formList.child(buildCreateButton(W));
+            return;
+        }
 
         // Status buttons
         var statusLabel = new TextWidget<>(t("tasknh.gui.detail.status"));
@@ -787,18 +800,49 @@ public class TaskDetailWidget extends Flow {
     }
 
     private void sendUpdate() {
-        if (isNew) {
-            if (!task.title.isEmpty()) {
-                if (!created) {
-                    TaskNHNetwork.sendEditToServer(task, new CreateTaskPacket(task));
-                    data.selectTask(task.id);
-                    created = true;
-                } else {
-                    TaskNHNetwork.sendEditToServer(task, new UpdateTaskPacket(task));
+        // An unsaved task is only sent by the create button, edits before that stay in the draft.
+        if (isNew) return;
+        TaskNHNetwork.sendEditToServer(task, new UpdateTaskPacket(task));
+    }
+
+    /** Sends the draft and opens it as a saved task, which shows the full form. Needs a title. */
+    private void createTask() {
+        if (task.title.trim()
+            .isEmpty()) return;
+        TaskNHNetwork.sendEditToServer(task, new CreateTaskPacket(task));
+        data.selectTask(task.id);
+        TaskNHGui.open(data);
+    }
+
+    private ButtonWidget<?> buildCreateButton(int width) {
+        // Greyed out while the title is empty; the tooltip says why.
+        var label = new TextWidget<>(
+            IKey.dynamic(
+                () -> (task.title.trim()
+                    .isEmpty() ? "§7" : "") + t("tasknh.gui.detail.create")));
+        label.size(width, EL_H);
+        label.textAlign(Alignment.Center);
+        // A dark wash over the button, grey text alone was easy to miss.
+        IDrawable disabledShade = new Rectangle().setColor(0x80000000);
+        return new ButtonWidget<>().size(width, EL_H)
+            .marginTop(4)
+            .overlay(
+                new DynamicDrawable(
+                    () -> task.title.trim()
+                        .isEmpty() ? disabledShade : IDrawable.EMPTY))
+            .child(label)
+            .tooltipDynamic(tip -> {
+                if (task.title.trim()
+                    .isEmpty()) {
+                    tip.addLine(t("tasknh.gui.detail.assignees.needs_title"));
                 }
-            }
-        } else {
-            TaskNHNetwork.sendEditToServer(task, new UpdateTaskPacket(task));
-        }
+            })
+            // The title changes without a rebuild, so the cached tooltip would keep the old state.
+            .tooltipAutoUpdate(true)
+            .onMousePressed(btn -> {
+                if (btn != 0) return false;
+                createTask();
+                return true;
+            });
     }
 }

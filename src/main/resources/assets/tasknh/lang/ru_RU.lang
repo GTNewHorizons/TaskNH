@@ -9,6 +9,7 @@ tasknh.gui.tab.open=Открыт
 tasknh.gui.tab.in_progress=В работе
 tasknh.gui.tab.done=Готово
 tasknh.gui.detail.description=Описание:
+tasknh.gui.detail.create=Создать таск
 tasknh.gui.detail.status=Статус:
 tasknh.gui.detail.assignees=Исполнители:
 tasknh.gui.detail.assignees.needs_title=Сначала введите название задачи
