@@ -12,6 +12,8 @@ import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.drawable.GuiTextures;
 import com.cleanroommc.modularui.drawable.UITexture;
 import com.cleanroommc.modularui.utils.Alignment;
+import com.cleanroommc.modularui.utils.MathUtils;
+import com.cleanroommc.modularui.utils.ParseResult;
 import com.cleanroommc.modularui.value.BoolValue;
 import com.cleanroommc.modularui.value.StringValue;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
@@ -738,31 +740,35 @@ public class TaskDetailWidget extends Flow {
         PlainTextField countField = new PlainTextField();
         countField.size(COUNT_FIELD_W, EL_H);
         countField.setTextColor(ColorUtils.textWhite.getColor());
+        // Expressions such as 64*8 are accepted: the field evaluates them on focus loss, and Enter
+        // evaluates the raw text itself below.
         countField.setNumbers(1, Task.MAX_TRACK_ITEM_COUNT);
-        // Plain integers only: the field accepts expressions by default, and those would be
-        // dropped by the parse below instead of reaching the task.
-        countField.acceptsExpressions(false);
-        countField.value(new StringValue.Dynamic(() -> String.valueOf(getCount.getAsInt()), val -> {
-            try {
-                setCount.accept(Task.clampTrackItemCount(Integer.parseInt(val.trim())));
-                sendUpdate();
-            } catch (NumberFormatException ignored) {}
-        }));
+        countField.value(
+            new StringValue.Dynamic(
+                () -> String.valueOf(getCount.getAsInt()),
+                val -> { if (applyCount(val, setCount)) sendUpdate(); }));
         countField.onEnter(() -> {
             // Read the text here: rebuilding the GUI drops the field before it syncs on focus loss.
-            try {
-                setCount.accept(
-                    Task.clampTrackItemCount(
-                        Integer.parseInt(
-                            countField.getText()
-                                .trim())));
-                sendUpdate();
-            } catch (NumberFormatException ignored) {}
+            if (applyCount(countField.getText(), setCount)) sendUpdate();
             close.run();
             TaskNHGui.open(data);
         });
         countRow.child(countField);
         return countRow;
+    }
+
+    /**
+     * Evaluates a count or an expression with the parser the field itself uses and stores it clamped.
+     * Returns false and keeps the old count when the text does not parse.
+     */
+    private static boolean applyCount(String text, IntConsumer setCount) {
+        ParseResult result = MathUtils.parseExpression(text.trim(), 0);
+        if (result.isFailure()) return false;
+        double value = result.getResult()
+            .getNumberValue()
+            .doubleValue();
+        setCount.accept(Task.clampTrackItemCount((int) Math.round(value)));
+        return true;
     }
 
     private TaskLocation ensureLocation() {
