@@ -75,5 +75,7 @@ public class TaskNHGuiData {
         this.detailScroll.reset();
         this.trackCountExpanded = false;
         this.checklistCountExpanded = null;
+        // Back to the list: a subtask opened from there next must not reuse the parent's old scroll.
+        this.parentScrollOwner = null;
     }
 }
