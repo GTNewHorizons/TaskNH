@@ -1,5 +1,6 @@
 package com.eldrinn.tasknh.integration;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -17,6 +18,7 @@ import com.eldrinn.tasknh.network.CreateTaskPacket;
 import com.eldrinn.tasknh.network.TaskNHNetwork;
 
 import blockrenderer6343.client.utils.BRUtil;
+import blockrenderer6343.integration.nei.GuiMultiblockHandler;
 import blockrenderer6343.integration.nei.MultiblockHandler;
 import codechicken.nei.PositionedStack;
 import codechicken.nei.recipe.GuiRecipeButton;
@@ -34,6 +36,8 @@ import cpw.mods.fml.relauncher.SideOnly;
  */
 @SideOnly(Side.CLIENT)
 public final class MultiblockTaskIntegration {
+
+    private static final Field LAYER_INDEX = findLayerIndex();
 
     private MultiblockTaskIntegration() {}
 
@@ -58,6 +62,11 @@ public final class MultiblockTaskIntegration {
      * controller comes first.
      */
     private static void createTask(MultiblockHandler handler) {
+        if (isSingleLayer()) {
+            Minecraft.getMinecraft().thePlayer
+                .addChatMessage(new ChatComponentTranslation("tasknh.chat.multiblock_single_layer"));
+            return;
+        }
         List<PositionedStack> parts = RecipeCatalysts.getRecipeCatalysts(handler);
         if (parts.isEmpty()) return;
 
@@ -84,6 +93,30 @@ public final class MultiblockTaskIntegration {
             .addChatMessage(new ChatComponentTranslation("tasknh.chat.multiblock_created", title));
     }
 
+    /**
+     * The preview's Layer control narrows the part list to one layer, which would leave the task short and
+     * could drop the controller. BlockRenderer6343 keeps the picked layer in a protected field, -1 for all.
+     */
+    private static boolean isSingleLayer() {
+        // A newer BlockRenderer6343 without the field keeps the button working rather than dead.
+        if (LAYER_INDEX == null) return false;
+        try {
+            return LAYER_INDEX.getInt(null) > -1;
+        } catch (IllegalAccessException e) {
+            return false;
+        }
+    }
+
+    private static Field findLayerIndex() {
+        try {
+            Field field = GuiMultiblockHandler.class.getDeclaredField("layerIndex");
+            field.setAccessible(true);
+            return field;
+        } catch (NoSuchFieldException e) {
+            return null;
+        }
+    }
+
     private static ItemStack singleItem(ItemStack stack) {
         if (stack == null) return null;
         ItemStack copy = stack.copy();
@@ -103,6 +136,9 @@ public final class MultiblockTaskIntegration {
         @Override
         public List<String> handleTooltip(List<String> currenttip) {
             currenttip.add(StatCollector.translateToLocal("tasknh.gui.multiblock.add"));
+            if (isSingleLayer()) {
+                currenttip.add(StatCollector.translateToLocal("tasknh.gui.multiblock.single_layer"));
+            }
             return currenttip;
         }
 
