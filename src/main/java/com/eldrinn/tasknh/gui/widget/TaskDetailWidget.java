@@ -314,6 +314,16 @@ public class TaskDetailWidget extends Flow {
         assigneesLabel.size(W, 14);
         formList.child(assigneesLabel);
         formList.child(new AssigneePickerWidget(task, data, W));
+        // GTNHLib gives every player a solo team, so a picker showing only you means nobody else joined it yet.
+        // An empty list, before the first sync, falls back to only you in the picker too.
+        if (TaskNHClientCache.getTeamMembers()
+            .size() <= 1) {
+            var soloHint = new TextWidget<>(t("tasknh.gui.detail.assignees.solo_team"));
+            soloHint.size(W, 20);
+            soloHint.textAlign(Alignment.CenterLeft);
+            soloHint.color(ColorUtils.textGray.getColor());
+            formList.child(soloHint);
+        }
 
         // Remind buttons for each assigned player
         if (!task.assignees.isEmpty()) {
