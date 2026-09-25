@@ -16,5 +16,9 @@ public class TeamMergeListener {
         TaskNHNetwork.sendToTeamMembers(
             event.surviving.getMembers(),
             new SyncAllTasksPacket(data.getTeamTasks(event.surviving.getTeamId())));
+        // Accepting an invite as a solo player merges teams, so the assignee lists sent at login are stale now.
+        TaskNHNetwork.sendToTeamMembers(
+            event.surviving.getMembers(),
+            PlayerLoginHandler.buildTeamMembersPacket(event.surviving));
     }
 }

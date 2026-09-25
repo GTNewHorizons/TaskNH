@@ -1,6 +1,10 @@
 package com.eldrinn.tasknh.hud;
 
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
@@ -19,6 +23,7 @@ import com.eldrinn.tasknh.config.PinnedTasksConfig;
 import com.eldrinn.tasknh.data.ChecklistItem;
 import com.eldrinn.tasknh.data.Task;
 import com.eldrinn.tasknh.data.TaskStatus;
+import com.eldrinn.tasknh.event.ItemTrackHandler;
 import com.eldrinn.tasknh.gui.ColorUtils;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -29,6 +34,14 @@ import cpw.mods.fml.relauncher.SideOnly;
 public class HudRenderer {
 
     private static final RenderItem RENDER_ITEM = new RenderItem();
+
+    /**
+     * Carried counts by tracked stack, valid while the inventory matches the snapshot. Keyed by identity: a
+     * tracked stack belongs to one task or checklist item, so it always comes with the same OreDictionary name.
+     */
+    private static final Map<ItemStack, Integer> COUNTS = new IdentityHashMap<>();
+    private static ItemStack[] snapshotStacks = new ItemStack[0];
+    private static int[] snapshotSizes = new int[0];
 
     private static final int MAX_BLOCK_WIDTH = 160;
     private static final int LINE_H = 10;
@@ -94,6 +107,8 @@ public class HudRenderer {
      * Used by HudSettingsScreen to position the drag handle.
      */
     public static int[] computeHudPosition(PinnedTasksConfig cfg, int sw, int sh, FontRenderer fr, List<Task> pinned) {
+        // Every frame starts here, both on the HUD and on the settings screen, so the counts are checked once.
+        refreshCounts();
         int blockW = maxBlockWidth(pinned, fr, cfg);
         int totalH = totalHeight(pinned, cfg, fr);
         int x = anchorX(cfg.getAnchor(), sw, blockW) + cfg.getOffsetX();
@@ -110,18 +125,19 @@ public class HudRenderer {
         y += LINE_H;
 
         ItemStack iconStack = task.iconItem;
-        if (iconStack != null) {
-            drawItemIcon(iconStack, x, y);
-            for (String line : fr.listFormattedStringToWidth(task.title, textW - ICON_SIZE - ICON_GAP)) {
-                fr.drawStringWithShadow(line, x + ICON_SIZE + ICON_GAP, y, ColorUtils.textWhite.getColor());
-                y += LINE_H;
-            }
-        } else {
-            for (String line : fr.listFormattedStringToWidth(task.title, textW)) {
-                fr.drawStringWithShadow(line, x, y, ColorUtils.textWhite.getColor());
-                y += LINE_H;
-            }
-        }
+        int titleX = iconStack != null ? x + ICON_SIZE + ICON_GAP : x;
+        int titleW = titleWidth(task, textW);
+        if (iconStack != null) drawItemIcon(iconStack, x, y);
+        y = drawCounted(
+            fr,
+            task.title,
+            task.trackItem,
+            titleCount(task),
+            titleX,
+            y,
+            titleW,
+            "",
+            ColorUtils.textWhite.getColor());
 
         if (!task.checklist.isEmpty()) {
             List<ChecklistItem> incomplete = task.checklist.stream()
@@ -136,28 +152,12 @@ public class HudRenderer {
             int shown = 0;
             for (ChecklistItem st : incomplete) {
                 if (shown >= maxChecklist) break;
-                List<String> lines = fr.listFormattedStringToWidth(st.title, checklistW);
-                fr.drawStringWithShadow("- " + lines.get(0), x + PADDING, y, ColorUtils.textWhite.getColor());
-                y += LINE_H;
-                for (int i = 1; i < lines.size(); i++) {
-                    fr.drawStringWithShadow("  " + lines.get(i), x + PADDING, y, ColorUtils.textWhite.getColor());
-                    y += LINE_H;
-                }
+                y = drawChecklistItem(fr, st, x + PADDING, y, checklistW, prefixW);
                 shown++;
             }
             for (ChecklistItem st : complete) {
                 if (shown >= maxChecklist) break;
-                List<String> lines = fr.listFormattedStringToWidth(st.title, checklistW);
-                fr.drawStringWithShadow("§m- " + lines.get(0) + "§r", x + PADDING, y, ColorUtils.textGray.getColor());
-                y += LINE_H;
-                for (int i = 1; i < lines.size(); i++) {
-                    fr.drawStringWithShadow(
-                        "§m  " + lines.get(i) + "§r",
-                        x + PADDING,
-                        y,
-                        ColorUtils.textGray.getColor());
-                    y += LINE_H;
-                }
+                y = drawChecklistItem(fr, st, x + PADDING, y, checklistW, prefixW);
                 shown++;
             }
 
@@ -175,6 +175,118 @@ public class HudRenderer {
         return y;
     }
 
+    /** Draws one checklist line: dash, then the wrapped text with its count. Checked items are struck. */
+    private int drawChecklistItem(FontRenderer fr, ChecklistItem st, int x, int y, int checklistW, int prefixW) {
+        String strike = st.checked ? "§m" : "";
+        int color = st.checked ? ColorUtils.textGray.getColor() : ColorUtils.textWhite.getColor();
+        fr.drawStringWithShadow(strike + "- ", x, y, color);
+        return drawCounted(fr, st.title, st.trackItem, checklistCount(st), x + prefixW, y, checklistW, strike, color);
+    }
+
+    /**
+     * Draws wrapped text, then the tracked item icon and its count after the last line, or on a line of its own
+     * when they do not fit. The icon sits next to the count because a task icon may show something else.
+     */
+    private int drawCounted(FontRenderer fr, String text, @Nullable ItemStack track, @Nullable String count, int x,
+        int y, int w, String format, int color) {
+        List<String> lines = fr.listFormattedStringToWidth(text, w);
+        for (String line : lines) {
+            fr.drawStringWithShadow(format + line + "§r", x, y, color);
+            y += LINE_H;
+        }
+        if (track == null || count == null) return y;
+        int cx = x;
+        int cy = y;
+        if (countFits(fr, text, count, w)) {
+            cx += fr.getStringWidth(lines.get(lines.size() - 1)) + ICON_GAP * 2;
+            cy -= LINE_H;
+        } else {
+            y += LINE_H;
+        }
+        drawItemIcon(track, cx, cy);
+        fr.drawStringWithShadow(count, cx + ICON_SIZE + ICON_GAP, cy, ColorUtils.textGray.getColor());
+        return y;
+    }
+
+    /** Lines taken by text drawn with {@link #drawCounted}. */
+    private static int countedLines(FontRenderer fr, String text, @Nullable String count, int w) {
+        int lines = fr.listFormattedStringToWidth(text, w)
+            .size();
+        return count != null && !countFits(fr, text, count, w) ? lines + 1 : lines;
+    }
+
+    /** Gap, tracked item icon, gap and the count text, as drawn after the text. */
+    private static int countWidth(FontRenderer fr, @Nullable String count) {
+        return count == null ? 0 : ICON_GAP * 2 + ICON_SIZE + ICON_GAP + fr.getStringWidth(count);
+    }
+
+    private static boolean countFits(FontRenderer fr, String text, String count, int w) {
+        List<String> lines = fr.listFormattedStringToWidth(text, w);
+        return fr.getStringWidth(lines.get(lines.size() - 1)) + countWidth(fr, count) <= w;
+    }
+
+    private static int titleWidth(Task t, int textW) {
+        return t.iconItem != null ? textW - ICON_SIZE - ICON_GAP : textW;
+    }
+
+    /** "have/need" for the task's tracked item while the task is open, or null. */
+    @Nullable
+    private static String titleCount(Task t) {
+        if (t.status == TaskStatus.DONE || t.trackItem == null) return null;
+        // Same floor as the server check, which treats a count below one as one.
+        return countText(t.trackItem, "", Math.max(1, t.trackItemCount));
+    }
+
+    /** "have/need" for an unchecked tracked item, or null. */
+    @Nullable
+    private static String checklistCount(ChecklistItem st) {
+        // A checked item stays checked once the items are spent, so its count would only confuse.
+        if (st.checked || st.trackItem == null) return null;
+        return countText(st.trackItem, st.trackOre, st.trackItemCount);
+    }
+
+    /**
+     * Only the local inventory is counted: the server also checks each member on their own, so this is what
+     * the player still has to gather.
+     */
+    private static String countText(ItemStack track, String ore, int need) {
+        Integer have = COUNTS.get(track);
+        if (have == null) {
+            have = ItemTrackHandler.countItem(Minecraft.getMinecraft().thePlayer.inventory.mainInventory, track, ore);
+            COUNTS.put(track, have);
+        }
+        return have + "/" + need;
+    }
+
+    /**
+     * Drops the cached counts once the inventory differs from the snapshot they were taken from. Comparing the
+     * stacks is far cheaper than counting: counting reads item names and OreDictionary ids for every slot, and a
+     * frame asks for each count several times, for the width, the height and the drawing.
+     * Each slot update from the server brings a new stack, and a size change on the client keeps the stack,
+     * so the reference and the size cover both.
+     */
+    private static void refreshCounts() {
+        ItemStack[] inventory = Minecraft.getMinecraft().thePlayer.inventory.mainInventory;
+        boolean changed = inventory.length != snapshotStacks.length;
+        for (int i = 0; !changed && i < inventory.length; i++) {
+            ItemStack stack = inventory[i];
+            changed = stack != snapshotStacks[i] || (stack != null && stack.stackSize != snapshotSizes[i]);
+        }
+        // Task syncs replace the tracked stacks, so stale keys pile up until the inventory changes. The cap
+        // keeps a long idle session from growing the map.
+        if (!changed && COUNTS.size() < 256) return;
+
+        COUNTS.clear();
+        if (snapshotStacks.length != inventory.length) {
+            snapshotStacks = new ItemStack[inventory.length];
+            snapshotSizes = new int[inventory.length];
+        }
+        for (int i = 0; i < inventory.length; i++) {
+            snapshotStacks[i] = inventory[i];
+            snapshotSizes[i] = inventory[i] != null ? inventory[i].stackSize : 0;
+        }
+    }
+
     static int totalHeight(List<Task> pinned, PinnedTasksConfig cfg, FontRenderer fr) {
         int maxSub = cfg.getMaxChecklistShown();
         int blockW = maxBlockWidth(pinned, fr, cfg);
@@ -184,9 +296,8 @@ public class HudRenderer {
         int h = 0;
         for (Task t : pinned) {
             h += LINE_H; // status
-            int titleW = t.iconItem != null ? textW - ICON_SIZE - ICON_GAP : textW;
-            h += LINE_H * fr.listFormattedStringToWidth(t.title, titleW)
-                .size();
+            int titleW = titleWidth(t, textW);
+            h += LINE_H * countedLines(fr, t.title, titleCount(t), titleW);
 
             List<ChecklistItem> incomplete = t.checklist.stream()
                 .filter(st -> !st.checked)
@@ -198,14 +309,12 @@ public class HudRenderer {
             int shown = 0;
             for (ChecklistItem st : incomplete) {
                 if (shown >= maxSub) break;
-                h += LINE_H * fr.listFormattedStringToWidth(st.title, checklistW)
-                    .size();
+                h += LINE_H * countedLines(fr, st.title, checklistCount(st), checklistW);
                 shown++;
             }
             for (ChecklistItem st : complete) {
                 if (shown >= maxSub) break;
-                h += LINE_H * fr.listFormattedStringToWidth(st.title, checklistW)
-                    .size();
+                h += LINE_H * countedLines(fr, st.title, checklistCount(st), checklistW);
                 shown++;
             }
             if (t.checklist.size() > shown) h += LINE_H; // "+N more"
@@ -224,12 +333,15 @@ public class HudRenderer {
                     "[" + t.status.displayName()
                         .toUpperCase() + "]"));
             int titlePrefix = t.iconItem != null ? ICON_SIZE + ICON_GAP : 0;
-            max = Math.max(max, titlePrefix + fr.getStringWidth(t.title));
-            int shown = 0;
-            for (ChecklistItem st : t.checklist) {
-                if (shown >= maxSub) break;
-                max = Math.max(max, PADDING + fr.getStringWidth("- " + st.title));
-                shown++;
+            max = Math.max(max, titlePrefix + fr.getStringWidth(t.title) + countWidth(fr, titleCount(t)));
+            // Measure the items that get drawn: unchecked ones first, the same as drawTaskBlock. The sort is stable.
+            List<ChecklistItem> shownItems = t.checklist.stream()
+                .sorted(java.util.Comparator.comparing((ChecklistItem st) -> st.checked))
+                // A hand-edited config can hold a negative limit, which limit() rejects.
+                .limit(Math.max(0, maxSub))
+                .collect(java.util.stream.Collectors.toList());
+            for (ChecklistItem st : shownItems) {
+                max = Math.max(max, PADDING + fr.getStringWidth("- " + st.title) + countWidth(fr, checklistCount(st)));
             }
         }
         return Math.min(max + PADDING * 2, MAX_BLOCK_WIDTH);
