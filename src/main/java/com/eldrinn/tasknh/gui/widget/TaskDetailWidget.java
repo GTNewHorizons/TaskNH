@@ -744,7 +744,9 @@ public class TaskDetailWidget extends Flow {
         // evaluates the raw text itself below.
         countField.setNumbers(1, Task.MAX_TRACK_ITEM_COUNT);
         // The field falls back to this number for empty or broken text on focus loss, so the count stays.
-        countField.defaultNumber(getCount.getAsInt());        countField.value(
+        countField.defaultNumber(getCount.getAsInt());
+        // Clearing is safe here: leaving the field empty keeps the count, see applyCount.
+        countField.rightClickClears();        countField.value(
             new StringValue.Dynamic(
                 () -> String.valueOf(getCount.getAsInt()),
                 val -> { if (applyCount(val, setCount)) sendUpdate(); }));
