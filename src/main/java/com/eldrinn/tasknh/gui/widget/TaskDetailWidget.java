@@ -324,65 +324,67 @@ public class TaskDetailWidget extends Flow {
                     () -> data.trackCountExpanded = false));
         }
 
-        // Assignees
-        var assigneesLabel = new TextWidget<>(t("tasknh.gui.detail.assignees"));
-        assigneesLabel.size(W, 14);
-        formList.child(assigneesLabel);
-        formList.child(new AssigneePickerWidget(task, data, W));
-        // GTNHLib gives every player a solo team, so a picker showing only you means nobody else joined it yet.
-        // An empty list, before the first sync, falls back to only you in the picker too.
-        if (TaskNHClientCache.getTeamMembers()
-            .size() <= 1) {
-            var soloHint = new TextWidget<>(t("tasknh.gui.detail.assignees.solo_team"));
-            soloHint.size(W, 20);
-            soloHint.textAlign(Alignment.CenterLeft);
-            soloHint.color(ColorUtils.textGray.getColor());
-            formList.child(soloHint);
-        }
+        // Assignees, hidden where nobody else can join: assigning and reminding would only ever point at you.
+        if (canHaveTeammates()) {
+            var assigneesLabel = new TextWidget<>(t("tasknh.gui.detail.assignees"));
+            assigneesLabel.size(W, 14);
+            formList.child(assigneesLabel);
+            formList.child(new AssigneePickerWidget(task, data, W));
+            // GTNHLib gives every player a solo team, so a picker showing only you means nobody else joined it yet.
+            // An empty list, before the first sync, falls back to only you in the picker too.
+            if (TaskNHClientCache.getTeamMembers()
+                .size() <= 1) {
+                var soloHint = new TextWidget<>(t("tasknh.gui.detail.assignees.solo_team"));
+                soloHint.size(W, 20);
+                soloHint.textAlign(Alignment.CenterLeft);
+                soloHint.color(ColorUtils.textGray.getColor());
+                formList.child(soloHint);
+            }
 
-        // Remind buttons for each assigned player
-        if (!task.assignees.isEmpty()) {
-            final int HEAD_SIZE = 8;
-            final int GAP = 4;
-            int remindW = Minecraft.getMinecraft().fontRenderer.getStringWidth("Remind") + 12;
-            int nameW = W - GAP - HEAD_SIZE - GAP - remindW - GAP;
+            // Remind buttons for each assigned player
+            if (!task.assignees.isEmpty()) {
+                final int HEAD_SIZE = 8;
+                final int GAP = 4;
+                int remindW = Minecraft.getMinecraft().fontRenderer.getStringWidth("Remind") + 12;
+                int nameW = W - GAP - HEAD_SIZE - GAP - remindW - GAP;
 
-            for (com.eldrinn.tasknh.data.AssignedPlayer ap : task.assignees) {
-                String apName = TaskNHClientCache.getTeamMembers()
-                    .stream()
-                    .filter(
-                        e -> e.id()
-                            .equals(ap.playerId()))
-                    .map(PlayerEntry::name)
-                    .findFirst()
-                    .orElseGet(
-                        () -> ap.playerId()
-                            .toString()
-                            .substring(0, 8));
+                for (com.eldrinn.tasknh.data.AssignedPlayer ap : task.assignees) {
+                    String apName = TaskNHClientCache.getTeamMembers()
+                        .stream()
+                        .filter(
+                            e -> e.id()
+                                .equals(ap.playerId()))
+                        .map(PlayerEntry::name)
+                        .findFirst()
+                        .orElseGet(
+                            () -> ap.playerId()
+                                .toString()
+                                .substring(0, 8));
 
-                Flow assigneeRow = Flow.row()
-                    .size(W, ROW_H);
-                assigneeRow.child(
-                    new PlayerHeadWidget(apName).size(HEAD_SIZE, HEAD_SIZE)
-                        .marginTop(6)
-                        .marginLeft(GAP));
-                assigneeRow.child(
-                    new TextWidget<>(apName).size(nameW, ROW_H)
-                        .textAlign(Alignment.CenterLeft)
-                        .marginLeft(GAP));
-                assigneeRow.child(
-                    new ButtonWidget<>().size(remindW, EL_H)
-                        .marginTop(2)
-                        .marginLeft(GAP)
-                        .child(
-                            new TextWidget<>("Remind").size(remindW, EL_H)
-                                .textAlign(Alignment.Center))
-                        .onMousePressed(btn -> {
-                            if (btn != 0) return false;
-                            TaskNHNetwork.CHANNEL.sendToServer(new RemindTaskPacket(task.id, ap.playerId()));
-                            return true;
-                        }));
-                formList.child(assigneeRow);
+                    Flow assigneeRow = Flow.row()
+                        .size(W, ROW_H);
+                    assigneeRow.child(
+                        new PlayerHeadWidget(apName).size(HEAD_SIZE, HEAD_SIZE)
+                            .marginTop(6)
+                            .marginLeft(GAP));
+                    assigneeRow.child(
+                        new TextWidget<>(apName).size(nameW, ROW_H)
+                            .textAlign(Alignment.CenterLeft)
+                            .marginLeft(GAP));
+                    assigneeRow.child(
+                        new ButtonWidget<>().size(remindW, EL_H)
+                            .marginTop(2)
+                            .marginLeft(GAP)
+                            .child(
+                                new TextWidget<>("Remind").size(remindW, EL_H)
+                                    .textAlign(Alignment.Center))
+                            .onMousePressed(btn -> {
+                                if (btn != 0) return false;
+                                TaskNHNetwork.CHANNEL.sendToServer(new RemindTaskPacket(task.id, ap.playerId()));
+                                return true;
+                            }));
+                    formList.child(assigneeRow);
+                }
             }
         }
 
@@ -808,6 +810,16 @@ public class TaskDetailWidget extends Flow {
             task.location = new TaskLocation(0, 0, 0, 0, "");
         }
         return task.location;
+    }
+
+    /**
+     * False in a singleplayer world nobody else can join, where there is no one to assign or invite. A world
+     * opened to LAN counts as shared.
+     */
+    private static boolean canHaveTeammates() {
+        Minecraft mc = Minecraft.getMinecraft();
+        return !mc.isSingleplayer() || mc.getIntegratedServer()
+            .getPublic();
     }
 
     private static String t(String key) {
