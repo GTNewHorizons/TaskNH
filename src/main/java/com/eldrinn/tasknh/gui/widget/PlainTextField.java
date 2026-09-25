@@ -8,7 +8,10 @@ import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
-/** TextFieldWidget without right-click-to-clear. Search bar uses stock TextFieldWidget instead. */
+/**
+ * TextFieldWidget without right-click-to-clear unless {@link #rightClickClears()} turns it on. Search bar uses
+ * stock TextFieldWidget instead.
+ */
 @SideOnly(Side.CLIENT)
 public class PlainTextField extends TextFieldWidget {
 
@@ -16,9 +19,16 @@ public class PlainTextField extends TextFieldWidget {
     public static final int DEFAULT_MAX_LENGTH = 256;
 
     private Runnable onEnter;
+    private boolean rightClickClears = false;
 
     public PlainTextField() {
         setMaxLength(DEFAULT_MAX_LENGTH);
+    }
+
+    /** Lets right-click empty the field. Off by default, so a stray click can't wipe a title or description. */
+    public PlainTextField rightClickClears() {
+        this.rightClickClears = true;
+        return this;
     }
 
     /** Fires when Enter is pressed while the field is focused. */
@@ -34,8 +44,8 @@ public class PlainTextField extends TextFieldWidget {
 
     @Override
     public @org.jetbrains.annotations.NotNull Interactable.Result onMousePressed(int mouseButton) {
-        if (mouseButton == 1) {
-            // skip clear — right-click is reserved for the search bar only
+        if (mouseButton == 1 && !this.rightClickClears) {
+            // skip clear — right-click only clears the search bar and fields that opt in
             return Interactable.Result.IGNORE;
         }
         return super.onMousePressed(mouseButton);
