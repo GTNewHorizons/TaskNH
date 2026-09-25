@@ -289,11 +289,14 @@ public class HudRenderer {
                         .toUpperCase() + "]"));
             int titlePrefix = t.iconItem != null ? ICON_SIZE + ICON_GAP : 0;
             max = Math.max(max, titlePrefix + fr.getStringWidth(t.title) + countWidth(fr, titleCount(t)));
-            int shown = 0;
-            for (ChecklistItem st : t.checklist) {
-                if (shown >= maxSub) break;
+            // Measure the items that get drawn: unchecked ones first, the same as drawTaskBlock. The sort is stable.
+            List<ChecklistItem> shownItems = t.checklist.stream()
+                .sorted(java.util.Comparator.comparing((ChecklistItem st) -> st.checked))
+                // A hand-edited config can hold a negative limit, which limit() rejects.
+                .limit(Math.max(0, maxSub))
+                .collect(java.util.stream.Collectors.toList());
+            for (ChecklistItem st : shownItems) {
                 max = Math.max(max, PADDING + fr.getStringWidth("- " + st.title) + countWidth(fr, checklistCount(st)));
-                shown++;
             }
         }
         return Math.min(max + PADDING * 2, MAX_BLOCK_WIDTH);
