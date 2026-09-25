@@ -200,6 +200,10 @@ public class TaskDetailWidget extends Flow {
                             .onMousePressed(btn -> {
                                 if (btn != 0) return false;
                                 data.selectTask(task.parentId);
+                                // A subtask opened from the task list has no remembered parent scroll.
+                                if (task.parentId.equals(data.parentScrollOwner)) {
+                                    data.detailScroll.store(data.parentScroll.getScroll(), data.parentScroll.getSize());
+                                }
                                 TaskNHGui.open(data);
                                 return true;
                             }))
@@ -533,6 +537,9 @@ public class TaskDetailWidget extends Flow {
                             .child(childTitle)
                             .onMousePressed(btn -> {
                                 if (btn != 0) return false;
+                                // Kept so the link back lands on this list again instead of the top of the form.
+                                data.parentScroll.store(data.detailScroll.getScroll(), data.detailScroll.getSize());
+                                data.parentScrollOwner = task.id;
                                 data.selectTask(child.id);
                                 TaskNHGui.open(data);
                                 return true;
