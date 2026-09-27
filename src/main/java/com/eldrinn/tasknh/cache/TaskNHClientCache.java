@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
@@ -42,9 +43,25 @@ public class TaskNHClientCache {
 
     /** Applies an edit locally, so the GUI shows it without waiting for the server. */
     public static void putLocal(Task task) {
+        if (!tasks.containsKey(task.id)) moveToEnd(task);
         tasks.put(task.id, task);
         pendingEdit = task;
         pendingDelete = null;
+    }
+
+    /**
+     * Gives the task the position the server assigns to a new task or one moved to another tab: the end
+     * of its group. The server's answer skips the GUI rebuild, so without this the list shows the task
+     * at the position it had before, or at 0 for a new one, until the GUI is reopened.
+     */
+    public static void moveToEnd(Task task) {
+        int maxOrder = -1;
+        for (Task other : tasks.values()) {
+            if (other.id.equals(task.id) || other.status != task.status) continue;
+            if (!Objects.equals(other.parentId, task.parentId)) continue;
+            maxOrder = Math.max(maxOrder, other.order);
+        }
+        task.order = maxOrder + 1;
     }
 
     /** Applies a deletion locally, cascading to subtasks the way the server does. */
