@@ -49,10 +49,10 @@ public final class MultiblockTaskIntegration {
     // drop the button if it were added first.
     @SubscribeEvent(priority = EventPriority.LOW)
     public void onRecipeButtons(GuiRecipeButton.UpdateRecipeButtonsEvent.Post event) {
-        RecipeHandlerRef ref = event.recipeWidget.getRecipeHandlerRef();
+        RecipeHandlerRef ref = event.handlerRef;
         if (!(ref.handler instanceof MultiblockHandler)) return;
         // Top right corner of the recipe, clear of the preview's own buttons along the bottom.
-        int x = Math.min(166, event.recipeWidget.w) - GuiRecipeButton.BUTTON_WIDTH;
+        int x = Math.min(166, event.width) - GuiRecipeButton.BUTTON_WIDTH;
         event.buttonList.add(new AddTaskButton(ref, x, 0));
     }
 
