@@ -2,7 +2,9 @@ package com.eldrinn.tasknh.data;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
@@ -72,6 +74,21 @@ public class Task {
             if (!item.checked) return false;
         }
         return true;
+    }
+
+    /**
+     * The position after the last task of the group the task belongs to. Positions are numbered inside one
+     * group, the roots of a tab or the subtasks of one parent. Server and client both place a task with this,
+     * so the client shows it where the server saves it.
+     */
+    public static int endOrder(Collection<Task> tasks, Task task) {
+        int maxOrder = -1;
+        for (Task other : tasks) {
+            if (other.id.equals(task.id) || other.status != task.status) continue;
+            if (!Objects.equals(other.parentId, task.parentId)) continue;
+            maxOrder = Math.max(maxOrder, other.order);
+        }
+        return maxOrder + 1;
     }
 
     /** Holds a count inside the range {@link #readFromBuf} accepts. Every path that sets one goes through here. */

@@ -121,7 +121,10 @@ public class ItemTrackHandler {
                 || (anyChecked && task.shouldCompleteOnChecklist());
             if (!completed && !anyChecked) continue;
 
-            if (completed) task.status = TaskStatus.DONE;
+            if (completed) {
+                task.status = TaskStatus.DONE;
+                data.moveToEnd(team.getTeamId(), task);
+            }
             data.updateTask(team.getTeamId(), task);
             anyChanged = true;
 

@@ -2,7 +2,6 @@ package com.eldrinn.tasknh.network;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Objects;
 
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.NetHandlerPlayServer;
@@ -54,17 +53,7 @@ public class UpdateTaskPacket implements IPacket {
             task.status = TaskStatus.DONE;
         }
 
-        if (oldTask.status != task.status) {
-            // Positions are numbered within one tab, so a task keeping its number while moving to
-            // another tab would land at an arbitrary spot there. It goes to the end instead.
-            int maxOrder = -1;
-            for (Task other : data.getTeamTasks(team.getTeamId())) {
-                if (other.id.equals(task.id) || other.status != task.status) continue;
-                if (!Objects.equals(other.parentId, task.parentId)) continue;
-                maxOrder = Math.max(maxOrder, other.order);
-            }
-            task.order = maxOrder + 1;
-        }
+        if (oldTask.status != task.status) data.moveToEnd(team.getTeamId(), task);
         data.updateTask(team.getTeamId(), task);
 
         // Notify players who are newly assigned to this task

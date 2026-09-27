@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
@@ -85,18 +84,18 @@ public class TaskNHWorldData extends WorldSavedData {
 
     /** A new task goes to the end of the manual order, whatever created it. */
     public void addTask(UUID teamId, Task task) {
-        // Positions are numbered inside one group, the roots of a tab or the subtasks of one parent,
-        // so the end is looked for in the group the task joins.
-        int maxOrder = -1;
-        for (Task existing : getTeamTasks(teamId)) {
-            if (existing.status != task.status) continue;
-            if (!Objects.equals(existing.parentId, task.parentId)) continue;
-            maxOrder = Math.max(maxOrder, existing.order);
-        }
-        task.order = maxOrder + 1;
+        moveToEnd(teamId, task);
         teamTasks.computeIfAbsent(teamId, k -> new LinkedHashMap<>())
             .put(task.id, task);
         markDirty();
+    }
+
+    /**
+     * Puts the task at the end of its group. Called for a new task and for one moved to another tab, where
+     * keeping its old number would land it at an arbitrary spot.
+     */
+    public void moveToEnd(UUID teamId, Task task) {
+        task.order = Task.endOrder(getTeamTasks(teamId), task);
     }
 
     public void updateTask(UUID teamId, Task task) {
