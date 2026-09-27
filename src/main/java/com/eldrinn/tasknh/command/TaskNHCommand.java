@@ -248,10 +248,12 @@ public class TaskNHCommand extends CommandBase {
                 }
                 Task task = findTaskByShortId(data, sender, args[1]);
                 if (task == null) return;
+                boolean wasDone = task.status == TaskStatus.DONE;
                 task.status = TaskStatus.DONE;
                 if (sender instanceof EntityPlayerMP) {
                     Team team = TeamManager.getTeamByPlayer(((EntityPlayerMP) sender).getUniqueID());
                     if (team != null) {
+                        if (!wasDone) data.moveToEnd(team.getTeamId(), task);
                         data.updateTask(team.getTeamId(), task);
                         TaskNHNetwork.sendToTeamMembers(
                             team.getMembers(),
