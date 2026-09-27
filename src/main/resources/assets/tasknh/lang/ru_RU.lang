@@ -65,10 +65,13 @@ tasknh.hud.settings.scale=Масштаб:
 tasknh.hud.settings.bg=Фон: %s
 tasknh.hud.settings.hud=HUD: %s
 tasknh.hud.settings.checklist=Чек-лист:
+tasknh.hud.settings.subtasks=Подзадачи:
 tasknh.hud.settings.tasks=Задачи:
 tasknh.hud.settings.reset=Сброс
 tasknh.hud.on=ВКЛ
 tasknh.hud.off=ВЫКЛ
+tasknh.hud.section.checklist=Чек-лист %s
+tasknh.hud.section.subtasks=Подзадачи %s
 
 # Command messages
 tasknh.cmd.not_in_team=Вы не состоите в команде.

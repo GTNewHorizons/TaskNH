@@ -101,6 +101,10 @@ public class PinnedTasksConfig {
         @SerializedName("maxSubtasksShown")
         Integer legacyMaxSubtasksShown;
 
+        // Not "maxSubtasksShown": that key is the checklist limit's old name, migrated above.
+        @SerializedName("maxSubtaskRowsShown")
+        int maxSubtaskRowsShown = 3;
+
         @SerializedName("maxPinnedTasks")
         int maxPinnedTasks = 5;
     }
@@ -201,8 +205,8 @@ public class PinnedTasksConfig {
     public void pin(UUID id) {
         if (world == null) return;
         String s = id.toString();
+        // The limit is checked by the caller, which knows the statuses: done tasks don't take a slot.
         if (world.pinnedTasks.contains(s)) return;
-        if (world.pinnedTasks.size() >= data.hud.maxPinnedTasks) return;
         world.pinnedTasks.add(s);
         save();
     }
@@ -314,6 +318,7 @@ public class PinnedTasksConfig {
         data.hud.showBackground = true;
         data.hud.hudVisible = true;
         data.hud.maxChecklistShown = 3;
+        data.hud.maxSubtaskRowsShown = 3;
         data.hud.maxPinnedTasks = 5;
         save();
     }
@@ -324,6 +329,15 @@ public class PinnedTasksConfig {
 
     public void setMaxChecklistShown(int value) {
         data.hud.maxChecklistShown = Math.max(1, Math.min(10, value));
+        save();
+    }
+
+    public int getMaxSubtasksShown() {
+        return data.hud.maxSubtaskRowsShown;
+    }
+
+    public void setMaxSubtasksShown(int value) {
+        data.hud.maxSubtaskRowsShown = Math.max(1, Math.min(10, value));
         save();
     }
 
