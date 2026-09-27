@@ -72,7 +72,7 @@ public class HudSettingsScreen extends GuiScreen {
     }
 
     private void drawControlPanel(PinnedTasksConfig cfg, int sw, int sh) {
-        int panelW = 420;
+        int panelW = 500;
         int px = (sw - panelW) / 2;
         int py = sh - PANEL_H - PANEL_PADDING;
 
@@ -109,6 +109,23 @@ public class HudSettingsScreen extends GuiScreen {
         String checklistLabel = String.valueOf(cfg.getMaxChecklistShown());
         fontRendererObj.drawStringWithShadow(checklistLabel, cx, py + 7, ColorUtils.textWhite.getColor());
         cx += fontRendererObj.getStringWidth(checklistLabel) + 4;
+
+        drawRect(cx, py + 2, cx + 14, py + 22, ColorUtils.backgroundButton.getColor());
+        fontRendererObj.drawStringWithShadow("+", cx + 3, py + 7, ColorUtils.textWhite.getColor());
+        cx += 20;
+
+        // Subtasks
+        String subtasksKey = StatCollector.translateToLocal("tasknh.hud.settings.subtasks");
+        fontRendererObj.drawStringWithShadow(subtasksKey, cx, py + 7, ColorUtils.textGray.getColor());
+        cx += fontRendererObj.getStringWidth(subtasksKey) + 4;
+
+        drawRect(cx, py + 2, cx + 14, py + 22, ColorUtils.backgroundButton.getColor());
+        fontRendererObj.drawStringWithShadow("-", cx + 4, py + 7, ColorUtils.textWhite.getColor());
+        cx += 16;
+
+        String subtasksLabel = String.valueOf(cfg.getMaxSubtasksShown());
+        fontRendererObj.drawStringWithShadow(subtasksLabel, cx, py + 7, ColorUtils.textWhite.getColor());
+        cx += fontRendererObj.getStringWidth(subtasksLabel) + 4;
 
         drawRect(cx, py + 2, cx + 14, py + 22, ColorUtils.backgroundButton.getColor());
         fontRendererObj.drawStringWithShadow("+", cx + 3, py + 7, ColorUtils.textWhite.getColor());
@@ -198,7 +215,7 @@ public class HudSettingsScreen extends GuiScreen {
     }
 
     private void handlePanelClick(PinnedTasksConfig cfg, int mouseX, int mouseY, int sw, int sh) {
-        int panelW = 420;
+        int panelW = 500;
         int px = (sw - panelW) / 2;
         int py = sh - PANEL_H - PANEL_PADDING;
 
@@ -232,6 +249,21 @@ public class HudSettingsScreen extends GuiScreen {
         cx += fontRendererObj.getStringWidth(checklistLabel) + 4;
         if (mouseX >= cx && mouseX <= cx + 14) {
             cfg.setMaxChecklistShown(cfg.getMaxChecklistShown() + 1);
+            return;
+        }
+        cx += 20;
+
+        // Subtasks
+        cx += fontRendererObj.getStringWidth(StatCollector.translateToLocal("tasknh.hud.settings.subtasks")) + 4;
+        if (mouseX >= cx && mouseX <= cx + 14) {
+            cfg.setMaxSubtasksShown(cfg.getMaxSubtasksShown() - 1);
+            return;
+        }
+        cx += 16;
+        String subtasksLabel = String.valueOf(cfg.getMaxSubtasksShown());
+        cx += fontRendererObj.getStringWidth(subtasksLabel) + 4;
+        if (mouseX >= cx && mouseX <= cx + 14) {
+            cfg.setMaxSubtasksShown(cfg.getMaxSubtasksShown() + 1);
             return;
         }
         cx += 20;

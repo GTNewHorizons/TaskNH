@@ -78,8 +78,11 @@ public class TaskRowWidget extends Flow {
         size(ROW_WIDTH, 20);
         // Only subtasks carry the reorder buttons: root tasks are dragged instead.
         final int moveColumn = isChild ? MOVE_BTN_W : 0;
-        // Subtasks can't be pinned: the parent covers that, so the freed width goes to the title.
-        final int SELECT_BTN_W = (isChild ? ROW_WIDTH - indent : ROW_WIDTH - PIN_BTN_W) - moveColumn;
+        // Subtasks can't be pinned: the parent covers that, so the freed width goes to the title. Done tasks are
+        // hidden from the HUD, so they have no pin either.
+        final boolean hasPin = !isChild && task.status != com.eldrinn.tasknh.data.TaskStatus.DONE;
+        final int pinW = hasPin ? PIN_BTN_W : 0;
+        final int SELECT_BTN_W = ROW_WIDTH - indent - pinW - moveColumn;
         // Spacer instead of a margin: the list layout ignores the margin and would shift the pin button.
         if (indent > 0) {
             var spacer = new TextWidget<>("");
@@ -125,7 +128,7 @@ public class TaskRowWidget extends Flow {
             foldBtn.size(FOLD_BTN_W, 20);
             // Sits left of the pin button. Flow skips children whose position on its axis is set,
             // so the button takes no width from the row itself.
-            foldBtn.right(PIN_BTN_W);
+            foldBtn.right(pinW);
             foldBtn.overlay(foldIcon(fold));
             foldBtn.addTooltipLine(
                 net.minecraft.util.StatCollector.translateToLocal(
@@ -146,6 +149,8 @@ public class TaskRowWidget extends Flow {
             });
             child(foldBtn);
         }
+
+        if (!hasPin) return;
 
         boolean pinned = TaskNHClientCache.isPinned(task.id);
         boolean canPin = TaskNHClientCache.canPin();

@@ -139,7 +139,11 @@ public class HudRenderer {
             "",
             ColorUtils.textWhite.getColor());
 
+        List<Task> subtasks = subtasksOf(task);
+        boolean headers = !task.checklist.isEmpty() && !subtasks.isEmpty();
+
         if (!task.checklist.isEmpty()) {
+            if (headers) y = drawHeader(fr, checklistHeader(task), x, y);
             List<ChecklistItem> incomplete = task.checklist.stream()
                 .filter(st -> !st.checked)
                 .collect(java.util.stream.Collectors.toList());
@@ -172,7 +176,75 @@ public class HudRenderer {
             }
         }
 
+        if (!subtasks.isEmpty()) {
+            if (headers) y = drawHeader(fr, subtasksHeader(subtasks), x, y);
+            int prefixW = fr.getStringWidth("> ");
+            int subtaskW = textW - PADDING - prefixW;
+            int shown = Math.min(subtasks.size(), Math.max(0, cfg.getMaxSubtasksShown()));
+            for (int i = 0; i < shown; i++) {
+                y = drawSubtask(fr, subtasks.get(i), x + PADDING, y, subtaskW, prefixW);
+            }
+            int remaining = subtasks.size() - shown;
+            if (remaining > 0) {
+                fr.drawStringWithShadow(
+                    StatCollector.translateToLocalFormatted("tasknh.gui.row.more", remaining),
+                    x + PADDING,
+                    y,
+                    ColorUtils.textGray.getColor());
+                y += LINE_H;
+            }
+        }
+
         return y;
+    }
+
+    private int drawHeader(FontRenderer fr, String header, int x, int y) {
+        fr.drawStringWithShadow(header, x, y, ColorUtils.textGray.getColor());
+        return y + LINE_H;
+    }
+
+    /** Draws one subtask line: arrow, then the wrapped title with its checklist progress. Done ones are struck. */
+    private int drawSubtask(FontRenderer fr, Task sub, int x, int y, int subtaskW, int prefixW) {
+        boolean done = sub.status == TaskStatus.DONE;
+        String strike = done ? "§m" : "";
+        int color = done ? ColorUtils.textGray.getColor() : ColorUtils.textWhite.getColor();
+        fr.drawStringWithShadow(strike + "> ", x, y, color);
+        return drawCounted(fr, subtaskText(sub), null, null, x + prefixW, y, subtaskW, strike, color);
+    }
+
+    /** Subtasks of the task, open ones first, each group in the task list's manual order. */
+    private static List<Task> subtasksOf(Task t) {
+        return TaskNHClientCache.getAll()
+            .stream()
+            .filter(c -> t.id.equals(c.parentId))
+            .sorted(
+                java.util.Comparator.comparing((Task c) -> c.status == TaskStatus.DONE)
+                    .thenComparingInt(c -> c.order))
+            .collect(java.util.stream.Collectors.toList());
+    }
+
+    /** Subtask title, followed by the progress of its own checklist in gray while it is open. */
+    private static String subtaskText(Task sub) {
+        if (sub.status == TaskStatus.DONE || sub.checklist.isEmpty()) return sub.title;
+        long checked = sub.checklist.stream()
+            .filter(st -> st.checked)
+            .count();
+        return sub.title + " §7" + checked + "/" + sub.checklist.size();
+    }
+
+    private static String checklistHeader(Task t) {
+        long checked = t.checklist.stream()
+            .filter(st -> st.checked)
+            .count();
+        return StatCollector
+            .translateToLocalFormatted("tasknh.hud.section.checklist", checked + "/" + t.checklist.size());
+    }
+
+    private static String subtasksHeader(List<Task> subtasks) {
+        long done = subtasks.stream()
+            .filter(c -> c.status == TaskStatus.DONE)
+            .count();
+        return StatCollector.translateToLocalFormatted("tasknh.hud.section.subtasks", done + "/" + subtasks.size());
     }
 
     /** Draws one checklist line: dash, then the wrapped text with its count. Checked items are struck. */
@@ -318,6 +390,15 @@ public class HudRenderer {
                 shown++;
             }
             if (t.checklist.size() > shown) h += LINE_H; // "+N more"
+
+            List<Task> subtasks = subtasksOf(t);
+            if (!t.checklist.isEmpty() && !subtasks.isEmpty()) h += LINE_H * 2; // section headers
+            int subtaskW = textW - PADDING - fr.getStringWidth("> ");
+            int shownSubtasks = Math.min(subtasks.size(), Math.max(0, cfg.getMaxSubtasksShown()));
+            for (int i = 0; i < shownSubtasks; i++) {
+                h += LINE_H * countedLines(fr, subtaskText(subtasks.get(i)), null, subtaskW);
+            }
+            if (subtasks.size() > shownSubtasks) h += LINE_H; // "+N more"
             h += BLOCK_GAP;
         }
         return h;
@@ -342,6 +423,15 @@ public class HudRenderer {
                 .collect(java.util.stream.Collectors.toList());
             for (ChecklistItem st : shownItems) {
                 max = Math.max(max, PADDING + fr.getStringWidth("- " + st.title) + countWidth(fr, checklistCount(st)));
+            }
+            List<Task> subtasks = subtasksOf(t);
+            if (!t.checklist.isEmpty() && !subtasks.isEmpty()) {
+                max = Math.max(max, fr.getStringWidth(checklistHeader(t)));
+                max = Math.max(max, fr.getStringWidth(subtasksHeader(subtasks)));
+            }
+            int shownSubtasks = Math.min(subtasks.size(), Math.max(0, cfg.getMaxSubtasksShown()));
+            for (int i = 0; i < shownSubtasks; i++) {
+                max = Math.max(max, PADDING + fr.getStringWidth("> " + subtaskText(subtasks.get(i))));
             }
         }
         return Math.min(max + PADDING * 2, MAX_BLOCK_WIDTH);

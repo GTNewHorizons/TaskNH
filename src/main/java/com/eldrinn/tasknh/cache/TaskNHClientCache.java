@@ -111,7 +111,7 @@ public class TaskNHClientCache {
     // --- Pin API ---
 
     public static void pin(UUID id) {
-        pinConfig.pin(id);
+        if (canPin()) pinConfig.pin(id);
     }
 
     public static void unpin(UUID id) {
@@ -122,20 +122,21 @@ public class TaskNHClientCache {
         return pinConfig.isPinned(id);
     }
 
+    /** Done tasks keep their pin but not a slot, the same as they are hidden from the HUD. */
     public static boolean canPin() {
-        return pinConfig.getPinnedIds()
-            .size() < pinConfig.getMaxPinnedTasks();
+        return getPinnedTasks().size() < pinConfig.getMaxPinnedTasks();
     }
 
     /**
-     * Pinned tasks in the order the HUD shows them: the ones in progress first, then the open and the done ones.
+     * Pinned tasks in the order the HUD shows them: the ones in progress first, then the open ones.
      * Within a status they follow the manual order of the task list, since each tab numbers its tasks separately.
+     * Done tasks stay pinned but are left out, so a reopened task comes back to the HUD.
      */
     public static List<Task> getPinnedTasks() {
         List<Task> result = new ArrayList<>();
         for (UUID id : pinConfig.getPinnedIds()) {
             Task t = tasks.get(id);
-            if (t != null) result.add(t);
+            if (t != null && t.status != TaskStatus.DONE) result.add(t);
         }
         result.sort(
             Comparator.comparingInt((Task t) -> hudRank(t.status))

@@ -99,8 +99,8 @@ public class TaskDetailWidget extends Flow {
         // Header: [back 20] [gap 4] [icon 20] [title fills rest] [delete 20] [pin 20]
         final int BACK_BTN_W = EL_H; // 20px
         final int HEADER_GAP = 4;
-        // Subtasks can't be pinned, so their header has no pin button.
-        final boolean showPin = !isNew && task.parentId == null;
+        // Subtasks can't be pinned, and done tasks are hidden from the HUD, so neither header has a pin button.
+        final boolean showPin = !isNew && task.parentId == null && task.status != TaskStatus.DONE;
         final int headerButtons = isNew ? 1 : (showPin ? 3 : 2);
         final int titleW = W - BACK_BTN_W - HEADER_GAP - EL_H * headerButtons;
         Flow header = Flow.row()

@@ -65,10 +65,13 @@ tasknh.hud.settings.scale=Scale:
 tasknh.hud.settings.bg=BG: %s
 tasknh.hud.settings.hud=HUD: %s
 tasknh.hud.settings.checklist=Checklist:
+tasknh.hud.settings.subtasks=Subtasks:
 tasknh.hud.settings.tasks=Tasks:
 tasknh.hud.settings.reset=Reset
 tasknh.hud.on=ON
 tasknh.hud.off=OFF
+tasknh.hud.section.checklist=Checklist %s
+tasknh.hud.section.subtasks=Subtasks %s
 
 # Command messages
 tasknh.cmd.not_in_team=You are not in a team.

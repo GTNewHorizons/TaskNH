@@ -13,7 +13,7 @@ A task management mod for Minecraft 1.7.10 (GregTech: New Horizons). TaskNH lets
 - **Subtasks**: attach child tasks to a task, one nesting level deep; a subtask is a full task with its own status, assignees and location. Fold the done subtasks or all of them under their parent
 - **Manual order**: drag a task to move it, with its subtasks; arrows reorder a subtask under its parent. The whole team sees the same order
 - **Checklist**: add checklist items to any task; check them off individually
-- **HUD**: pin up to 5 tasks to an on-screen HUD with their checklists, with the tracked item's icon and how many you carry; position, scale and background are configurable
+- **HUD**: pin up to 5 tasks to an on-screen HUD with their checklists and subtasks, with the tracked item's icon and how many you carry; position, scale and background are configurable
 - **Item tracking**: drag an item onto the task's tracking slot and the task closes itself once a team member carries it, in the amount the slot asks for
 - **Assignees**: assign any online player to a task from the GUI or via command, and nudge one of them with a reminder in chat
 - **Map markers**: pin a world coordinate to a task and display it on the map (requires Navigator)
@@ -98,7 +98,7 @@ The window has two pages. Click a task row to open its detail page; use the back
 - **Icon slot** (top-left): drag any item from NEI onto the slot to set it as the task icon; right-click to clear, left-click to open its recipes in NEI, and the R and U hotkeys work over the slot
 - **Title field**: editable inline, up to 256 characters
 - **Delete button** (top-right): permanently deletes the task for the whole team
-- **Pin button** (top-right): pins the task to the HUD, up to 5 at a time; subtasks cannot be pinned
+- **Pin button** (top-right): pins the task to the HUD, up to 5 open or in-progress tasks at a time; subtasks and done tasks cannot be pinned
 - **Description**: free-text field, up to 512 characters
 - **Status**: toggle between To do / Doing / Done
 - **Assignees**: click any online player to assign or unassign them. Each assignee gets a `Remind` button that sends them a chat message with a link to the task. When nobody else is in your team, a hint points to `/gtnhteam invite`. A singleplayer world that isn't open to LAN hides the section, unless the task already has assignees
@@ -111,7 +111,7 @@ The search bar, the subtask and checklist add fields and the X/Y/Z fields hold u
 
 ## HUD
 
-Pinned tasks are drawn on screen with their checklists. A task or checklist item with a tracked item shows its icon and how many of it you carry, like 5/10. The count covers only your own inventory, since the mod checks each member's inventory on its own. Tasks in progress come first, then open and done ones, each group in the order of the task list. Open the HUD settings from the button in the bottom-right of the task list: drag the handle to reposition, adjust scale, background and how many tasks and checklist lines are shown, or turn the HUD off. The client keeps pins and subtask folds separately for each world and shares the HUD settings between them, all in the mod config folder.
+Pinned tasks are drawn on screen with their checklists and subtasks. Checklist lines start with `-` and subtask lines with `>`, and a task with both gets a `Checklist X/Y` and a `Subtasks X/Y` header. An open subtask with a checklist shows its progress after the title. Checked items and done subtasks stay struck through at the end of their list. A task or checklist item with a tracked item shows its icon and how many of it you carry, like 5/10. The count covers only your own inventory, since the mod checks each member's inventory on its own. Tasks in progress come first, then open ones, each group in the order of the task list. A done task leaves the HUD and frees its slot but stays pinned, so it comes back if you reopen it. Open the HUD settings from the button in the bottom-right of the task list: drag the handle to reposition, adjust scale, background and how many tasks, checklist lines and subtask lines are shown, or turn the HUD off. The client keeps pins and subtask folds separately for each world and shares the HUD settings between them, all in the mod config folder.
 
 ## Config
 
