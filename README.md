@@ -30,13 +30,13 @@ A task management mod for Minecraft 1.7.10 (GregTech: New Horizons). TaskNH lets
 | Dependency                       | Version        |
 |----------------------------------|----------------|
 | Minecraft Forge                  | 1.7.10         |
-| GTNHLib                          | 0.11.47+       |
-| ModularUI2                       | 2.3.88-1.7.10+ |
-| Navigator *(optional)*           | 1.1.9+         |
-| NotEnoughItems GTNH *(optional)* | 2.8.105-GTNH+  |
-| BetterQuesting *(optional)*      | 3.8.84-GTNH+   |
-| BlockRenderer6343 *(optional)*   | 1.4.21+        |
-| ServerUtilities *(optional)*     | 2.4.9+         |
+| [GTNHLib](https://github.com/GTNewHorizons/GTNHLib)                          | 0.11.47+       |
+| [ModularUI2](https://github.com/GTNewHorizons/ModularUI2)                       | 2.3.88-1.7.10+ |
+| [Navigator](https://github.com/GTNewHorizons/Navigator) *(optional)*           | 1.1.9+         |
+| [NotEnoughItems GTNH](https://github.com/GTNewHorizons/NotEnoughItems) *(optional)* | 2.8.105-GTNH+  |
+| [BetterQuesting](https://github.com/GTNewHorizons/BetterQuesting) *(optional)*      | 3.8.84-GTNH+   |
+| [BlockRenderer6343](https://github.com/GTNewHorizons/BlockRenderer6343) *(optional)*   | 1.4.21+        |
+| [ServerUtilities](https://github.com/GTNewHorizons/ServerUtilities) *(optional)*     | 2.4.9+         |
 
 Navigator is only required for map marker support. Without it the mod works normally and the Location section is still available for storing coordinates.
 
