@@ -8,7 +8,14 @@ import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 
-@Mod(modid = TaskNHMod.MODID, version = Tags.VERSION, name = "TaskNH", acceptedMinecraftVersions = "[1.7.10]")
+@Mod(
+    modid = TaskNHMod.MODID,
+    version = Tags.VERSION,
+    name = "TaskNH",
+    acceptedMinecraftVersions = "[1.7.10]",
+    // FML checks the version of an after: mod only when it is installed, so NEI stays optional.
+    dependencies = "required-after:gtnhlib@[0.11.51,);required-after:modularui2@[2.3.91,);"
+        + "after:navigator;after:betterquesting;after:NotEnoughItems@[2.8.150,)")
 public class TaskNHMod {
 
     public static final String MODID = "tasknh";
