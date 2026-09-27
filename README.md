@@ -27,6 +27,8 @@ A task management mod for Minecraft 1.7.10 (GregTech: New Horizons). TaskNH lets
 
 ## Requirements
 
+TaskNH does not run on GTNH 2.8.x. That pack ships ModularUI2 and GTNHLib versions that are too old, and you cannot update them by hand: the current GTNHLib crashes the 2.8.x Angelica on startup. Use a 2.9.x pack that meets the versions below.
+
 | Dependency                       | Version        |
 |----------------------------------|----------------|
 | Minecraft Forge                  | 1.7.10         |
