@@ -14,7 +14,7 @@
 		"screenshots": [],
 		"parent": "",
 		"requiredMods": [],
-		"dependencies": ["betterquesting"],
+		"dependencies": [],
 		"dependants": [],
 		"useDependencyInformation": false
 	}]
