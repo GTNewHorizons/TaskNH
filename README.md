@@ -38,7 +38,7 @@ TaskNH does not run on GTNH 2.8.x. That pack ships ModularUI2 and GTNHLib versio
 | [NotEnoughItems GTNH](https://github.com/GTNewHorizons/NotEnoughItems) *(optional)* | 2.8.150-GTNH+  |
 | [BetterQuesting](https://github.com/GTNewHorizons/BetterQuesting) *(optional)*      | 3.8.87-GTNH+   |
 | [BlockRenderer6343](https://github.com/GTNewHorizons/BlockRenderer6343) *(optional)*   | 1.4.23+        |
-| [ServerUtilities](https://github.com/GTNewHorizons/ServerUtilities) *(optional)*     | 2.4.9+         |
+| [ServerUtilities](https://github.com/GTNewHorizons/ServerUtilities) *(optional)*     | 2.4.13+        |
 
 Navigator is only required for map marker support. Without it the mod works normally and the Location section is still available for storing coordinates.
 
