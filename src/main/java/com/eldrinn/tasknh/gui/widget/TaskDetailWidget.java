@@ -263,7 +263,7 @@ public class TaskDetailWidget extends Flow {
                 new ToggleButton().size(btnW, EL_H)
                     .value(new BoolValue.Dynamic(() -> task.status == status, selected -> {
                         if (selected) {
-                            task.status = status;
+                            setStatus(status);
                             sendUpdate();
                             // No rebuild here: the buttons repaint themselves and the list is
                             // rebuilt when the back button returns to it.
@@ -447,7 +447,7 @@ public class TaskDetailWidget extends Flow {
                 .value(new BoolValue.Dynamic(() -> task.completeOnChecklist, val -> {
                     task.completeOnChecklist = val;
                     // Turning the flag on over an already finished checklist closes the task right away.
-                    if (task.shouldCompleteOnChecklist()) task.status = TaskStatus.DONE;
+                    if (task.shouldCompleteOnChecklist()) setStatus(TaskStatus.DONE);
                     sendUpdate();
                 }))
                 .overlay(true, GuiTextures.CHECKMARK));
@@ -688,7 +688,7 @@ public class TaskDetailWidget extends Flow {
                     item.checked = val;
                     // The server decides this too, but its answer only reaches the cache: the sync for an
                     // edit we just sent skips the rebuild, so the open panel would keep the old status.
-                    if (task.shouldCompleteOnChecklist()) task.status = TaskStatus.DONE;
+                    if (task.shouldCompleteOnChecklist()) setStatus(TaskStatus.DONE);
                     sendUpdate();
                 }))
                 .overlay(true, GuiTextures.CHECKMARK));
@@ -826,6 +826,13 @@ public class TaskDetailWidget extends Flow {
 
     private static String t(String key) {
         return net.minecraft.util.StatCollector.translateToLocal(key);
+    }
+
+    /** A task moved to another tab goes to its end, the same place the server puts it. */
+    private void setStatus(TaskStatus status) {
+        if (task.status == status) return;
+        task.status = status;
+        TaskNHClientCache.moveToEnd(task);
     }
 
     private void sendUpdate() {
