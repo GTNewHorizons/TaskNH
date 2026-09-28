@@ -25,6 +25,7 @@ tasknh.gui.detail.icon_hint=Drag an item here from NEI to use as the task icon. 
 tasknh.gui.detail.track_item=Auto-complete on item:
 tasknh.gui.detail.track_item_hint=Drag an item here from NEI: the task completes once that item is in a team member inventory\nLeft-click opens its recipes, middle-click sets how many, right-click clears the slot
 tasknh.gui.detail.track_item_count=Amount:
+tasknh.gui.detail.checklist_rename_hint=Double-click to rename
 tasknh.gui.detail.checklist_track_hint=Drag an item here from NEI: the item gets checked once it is in a team member inventory\nLeft-click opens its recipes, middle-click sets how many, right-click clears the slot
 tasknh.gui.detail.checklist_track_ore=Any item tagged %s counts
 tasknh.gui.detail.set_icon=Set to held

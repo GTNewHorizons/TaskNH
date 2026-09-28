@@ -10,6 +10,7 @@ import net.minecraft.item.ItemStack;
 
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.drawable.DynamicDrawable;
 import com.cleanroommc.modularui.drawable.GuiTextures;
 import com.cleanroommc.modularui.drawable.Rectangle;
@@ -675,10 +676,31 @@ public class TaskDetailWidget extends Flow {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private Flow checklistRow(ChecklistItem item, Flow col) {
         final int W = TaskNHGui.LEFT_WIDTH - 2 * TaskNHGui.PADDING - SCROLLBAR_W;
-        var itemTitle = new TextWidget<>(item.title);
-        itemTitle.size(W - EL_H * 3 - 4, EL_H);
-        itemTitle.textAlign(Alignment.CenterLeft);
-        itemTitle.marginLeft(4);
+        IWidget itemTitle;
+        if (item.id.equals(data.checklistRenaming)) {
+            PlainTextField titleField = new PlainTextField();
+            titleField.size(W - EL_H * 3 - 4, EL_H);
+            titleField.marginLeft(4);
+            titleField.setTextColor(ColorUtils.textWhite.getColor());
+            titleField.setFocusOnGuiOpen(true);
+            // Focus loss saves the title and leaves the field open until the next rebuild.
+            titleField.value(new StringValue.Dynamic(() -> item.title, val -> renameChecklistItem(item, val)));
+            titleField.onEnter(() -> {
+                // Read the text here: rebuilding the GUI drops the field before it syncs on focus loss.
+                renameChecklistItem(item, titleField.getText());
+                data.checklistRenaming = null;
+                TaskNHGui.open(data);
+            });
+            itemTitle = titleField;
+        } else {
+            itemTitle = new DoubleClickTextWidget(item.title, () -> {
+                data.checklistRenaming = item.id;
+                TaskNHGui.open(data);
+            }).size(W - EL_H * 3 - 4, EL_H)
+                .textAlign(Alignment.CenterLeft)
+                .marginLeft(4)
+                .addTooltipLine(IKey.lang("tasknh.gui.detail.checklist_rename_hint"));
+        }
 
         Flow row = Flow.row()
             .size(W, ROW_H);
@@ -750,6 +772,14 @@ public class TaskDetailWidget extends Flow {
                     return true;
                 }));
         return row;
+    }
+
+    /** Stores a new title for a checklist item. An empty or unchanged title keeps the old one. */
+    private void renameChecklistItem(ChecklistItem item, String text) {
+        String title = text.trim();
+        if (title.isEmpty() || title.equals(item.title)) return;
+        item.title = title;
+        sendUpdate();
     }
 
     /**

@@ -25,6 +25,7 @@ tasknh.gui.detail.icon_hint=Перетащите предмет из NEI, что
 tasknh.gui.detail.track_item=Закрыть по предмету:
 tasknh.gui.detail.track_item_hint=Перетащите предмет из NEI: задача закроется, когда предмет окажется в инвентаре участника команды\nЛКМ открывает рецепты, СКМ задаёт количество, ПКМ очищает слот
 tasknh.gui.detail.track_item_count=Количество:
+tasknh.gui.detail.checklist_rename_hint=Двойной клик, чтобы переименовать
 tasknh.gui.detail.checklist_track_hint=Перетащите предмет из NEI: пункт отметится, когда предмет окажется в инвентаре участника команды\nЛКМ открывает рецепты, СКМ задаёт количество, ПКМ очищает слот
 tasknh.gui.detail.checklist_track_ore=Подходит любой предмет с тегом %s
 tasknh.gui.detail.set_icon=Взять из руки
