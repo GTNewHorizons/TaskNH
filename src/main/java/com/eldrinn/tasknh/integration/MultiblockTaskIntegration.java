@@ -1,6 +1,7 @@
 package com.eldrinn.tasknh.integration;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -59,32 +60,37 @@ public final class MultiblockTaskIntegration {
     /**
      * BlockRenderer6343 publishes the preview's parts as the handler's catalysts, the column beside the
      * preview, with their counts for the tier and channels picked on screen. NEI sorts them so the
-     * controller comes first.
+     * controller comes first. The parts are read before the count screen opens, so whatever the preview
+     * resets on the way back does not change the task.
      */
-    private static void createTask(MultiblockHandler handler) {
+    private static void askCount(MultiblockHandler handler) {
         if (isSingleLayer()) {
             Minecraft.getMinecraft().thePlayer
                 .addChatMessage(new ChatComponentTranslation("tasknh.chat.multiblock_single_layer"));
             return;
         }
-        List<PositionedStack> parts = RecipeCatalysts.getRecipeCatalysts(handler);
+        List<ItemStack> parts = new ArrayList<>();
+        for (PositionedStack part : RecipeCatalysts.getRecipeCatalysts(handler)) {
+            if (part.item != null) parts.add(part.item.copy());
+        }
         if (parts.isEmpty()) return;
+        String name = handler.getFullRecipeName();
+        Minecraft mc = Minecraft.getMinecraft();
+        mc.displayGuiScreen(new MultiblockCountScreen(mc.currentScreen, count -> createTask(name, parts, count)));
+    }
 
-        String title = handler.getFullRecipeName();
+    private static void createTask(String name, List<ItemStack> parts, int multiplier) {
+        String title = multiplier > 1 ? multiplier + "x " + name : name;
         Task task = new Task(UUID.randomUUID(), title, "", TaskStatus.OPEN);
-        task.iconItem = singleItem(parts.get(0).item);
-        for (PositionedStack part : parts) {
-            ItemStack stack = part.item;
-            if (stack == null) continue;
+        task.iconItem = singleItem(parts.get(0));
+        for (ItemStack stack : parts) {
             // Any tier of hatch fits its slot, so tracking the one the preview shows would miss the others.
             if (BRUtil.hatchFilter.test(stack)) continue;
-            ChecklistItem item = new ChecklistItem(
-                UUID.randomUUID(),
-                stack.stackSize + "x " + stack.getDisplayName(),
-                false);
+            int count = stack.stackSize * multiplier;
+            ChecklistItem item = new ChecklistItem(UUID.randomUUID(), count + "x " + stack.getDisplayName(), false);
             item.trackItem = singleItem(stack);
             // Parts past the tracking cap keep their full count in the title.
-            item.trackItemCount = Task.clampTrackItemCount(stack.stackSize);
+            item.trackItemCount = Task.clampTrackItemCount(count);
             task.checklist.add(item);
         }
 
@@ -155,7 +161,7 @@ public final class MultiblockTaskIntegration {
 
         @Override
         public void mouseReleased(int mouseX, int mouseY) {
-            createTask((MultiblockHandler) handlerRef.handler);
+            askCount((MultiblockHandler) handlerRef.handler);
         }
     }
 }

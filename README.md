@@ -22,7 +22,7 @@ A task management mod for Minecraft 1.7.10 (GregTech: New Horizons). TaskNH lets
 - **Dark and light themes**: toggle with the sun button in the bottom-right of the GUI
 - **Search**: expandable search bar filters the task list live by title or description
 - **Quest import**: create a task from a BetterQuesting quest via the quest context menu, with required items turned into checklist items that check themselves once a team member carries the item
-- **Multiblock import**: the + button on a multiblock's structure page in NEI creates a task with the controller as its icon and each part as a tracked checklist item, counted for the tier and channels you picked. Hatches are left out, since any tier fits their slot
+- **Multiblock import**: the + button on a multiblock's structure page in NEI asks how many you want to build, then creates a task with the controller as its icon and each part as a tracked checklist item, counted for the tier and channels you picked and multiplied by that number. A task for more than one gets a prefix like 2x in its title. Hatches are left out, since any tier fits their slot
 - **Permissions**: every subcommand has its own permission node, tunable through ServerUtilities ranks
 
 ## Requirements
