@@ -12,7 +12,7 @@ import net.minecraft.network.PacketBuffer;
 public class ChecklistItem {
 
     public final UUID id;
-    public final String title;
+    public String title;
     public boolean checked;
     /** The item gets checked once a member carries this item. Works like {@link Task#trackItem}. */
     @Nullable

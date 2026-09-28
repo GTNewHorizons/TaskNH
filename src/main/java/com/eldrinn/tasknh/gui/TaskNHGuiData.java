@@ -43,6 +43,10 @@ public class TaskNHGuiData {
     @Nullable
     public UUID checklistCountExpanded = null;
 
+    /** Checklist item whose title is shown as a text field, or null. Set by double-clicking the title. */
+    @Nullable
+    public UUID checklistRenaming = null;
+
     /** Scroll state of the task list, kept across rebuilds. */
     public final ScrollMemoryList.Memory listScroll = new ScrollMemoryList.Memory();
 
@@ -65,6 +69,7 @@ public class TaskNHGuiData {
         this.detailScroll.reset();
         this.trackCountExpanded = false;
         this.checklistCountExpanded = null;
+        this.checklistRenaming = null;
     }
 
     public void enterCreateMode() {
@@ -74,6 +79,7 @@ public class TaskNHGuiData {
         this.detailScroll.reset();
         this.trackCountExpanded = false;
         this.checklistCountExpanded = null;
+        this.checklistRenaming = null;
     }
 
     public void clear() {
@@ -83,6 +89,7 @@ public class TaskNHGuiData {
         this.detailScroll.reset();
         this.trackCountExpanded = false;
         this.checklistCountExpanded = null;
+        this.checklistRenaming = null;
         // Back to the list: a subtask opened from there next must not reuse the parent's old scroll.
         this.parentScrollOwner = null;
     }
