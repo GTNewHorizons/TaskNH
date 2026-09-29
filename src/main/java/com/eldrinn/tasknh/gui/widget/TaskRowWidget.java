@@ -3,6 +3,7 @@ package com.eldrinn.tasknh.gui.widget;
 import java.util.UUID;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiPlayerInfo;
 import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.item.ItemStack;
@@ -240,15 +241,16 @@ public class TaskRowWidget extends Flow {
             used += ICON_W;
         }
 
-        // A done subtask is struck through in place instead of moving to the Done tab.
-        String title = truncate(task.title);
-        if (task.parentId != null && task.status == com.eldrinn.tasknh.data.TaskStatus.DONE) {
-            title = net.minecraft.util.EnumChatFormatting.STRIKETHROUGH + title;
-        }
         int leftPad = stack == null ? TEXT_PAD : 0;
         int assigneeW = assigneeBlockWidth(task);
         int maxTitleW = CONTENT_W - used - leftPad - assigneeW;
-        int titlePixelW = Minecraft.getMinecraft().fontRenderer.getStringWidth(title) + 4;
+        FontRenderer fr = Minecraft.getMinecraft().fontRenderer;
+        String title = truncate(fr, task.title, maxTitleW - 4);
+        // A done subtask is struck through in place instead of moving to the Done tab.
+        if (task.parentId != null && task.status == com.eldrinn.tasknh.data.TaskStatus.DONE) {
+            title = net.minecraft.util.EnumChatFormatting.STRIKETHROUGH + title;
+        }
+        int titlePixelW = fr.getStringWidth(title) + 4;
         var titleLabel = new TextWidget<>(title);
         titleLabel.textAlign(Alignment.CenterLeft);
         titleLabel.marginLeft(leftPad);
@@ -321,8 +323,10 @@ public class TaskRowWidget extends Flow {
         return null;
     }
 
-    private static String truncate(String s) {
-        return s.length() <= 22 ? s : s.substring(0, 21) + "~";
+    /** Cuts the title to fit the pixel width left in the row, marking a cut title with a trailing "~". */
+    private static String truncate(FontRenderer fr, String s, int maxWidth) {
+        if (fr.getStringWidth(s) <= maxWidth) return s;
+        return fr.trimStringToWidth(s, maxWidth - fr.getStringWidth("~")) + "~";
     }
 
     @SideOnly(Side.CLIENT)
