@@ -106,8 +106,12 @@ public final class MultiblockTaskIntegration {
     private static boolean isSingleLayer() {
         // A newer BlockRenderer6343 without the field keeps the button working rather than dead.
         if (LAYER_INDEX == null) return false;
+        // BlockRenderer6343 1.4.25 moved the field from static to per handler. getInt ignores the handler
+        // for a static field, so older versions read it the same way.
+        GuiMultiblockHandler handler = MultiblockHandler.getCurrentGuiHandler();
+        if (handler == null) return false;
         try {
-            return LAYER_INDEX.getInt(null) > -1;
+            return LAYER_INDEX.getInt(handler) > -1;
         } catch (IllegalAccessException e) {
             return false;
         }
