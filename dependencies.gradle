@@ -41,7 +41,7 @@ dependencies {
     compileOnly("com.github.GTNewHorizons:NotEnoughItems:2.8.150-GTNH:dev") { transitive = false }
     compileOnly(rfg.deobf("com.github.GTNewHorizons:BetterQuesting:3.8.87-GTNH:dev")) { transitive = false }
     compileOnly(rfg.deobf("com.github.GTNewHorizons:ServerUtilities:2.4.13:dev")) { transitive = false }
-    compileOnly("com.github.GTNewHorizons:BlockRenderer6343:1.4.23:dev") { transitive = false }
+    compileOnly("com.github.GTNewHorizons:BlockRenderer6343:1.4.25:dev") { transitive = false }
     compileOnly("com.github.GTNewHorizons:StructureLib:1.4.45:dev") { transitive = false }
 
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:Angelica:2.2.21:dev") { transitive = false }
