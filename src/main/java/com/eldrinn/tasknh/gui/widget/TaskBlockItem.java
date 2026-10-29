@@ -221,14 +221,15 @@ public class TaskBlockItem extends SortableListWidget.Item<Task> {
         int gold = ColorUtils.accentGold.getColor() & 0xFFFFFF;
         int w = getArea().width;
         int zoneW = zoneWidth();
-        GuiDraw.drawRect(x0 + w - zoneW, y0, zoneW, TaskRowWidget.ROW_HEIGHT, (over ? 0x80000000 : 0x40000000) | gold);
+        GuiDraw.drawRect(x0 + w - zoneW, y0, zoneW, TaskRowWidget.ROW_HEIGHT, (over ? 0xB0000000 : 0x66000000) | gold);
         FontRenderer fr = Minecraft.getMinecraft().fontRenderer;
-        String mark = "»";
+        String label = fr
+            .trimStringToWidth(StatCollector.translateToLocal("tasknh.gui.list.nest_zone"), Math.max(0, zoneW - 4));
         fr.drawStringWithShadow(
-            mark,
-            x0 + w - zoneW + (zoneW - fr.getStringWidth(mark)) / 2,
+            label,
+            x0 + w - zoneW + (zoneW - fr.getStringWidth(label)) / 2,
             y0 + (TaskRowWidget.ROW_HEIGHT - fr.FONT_HEIGHT) / 2 + 1,
-            0xFF000000 | gold);
+            ColorUtils.textWhite.getColor());
         if (!over) return;
         int frame = 0xFF000000 | gold;
         int h = getArea().height;

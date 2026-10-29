@@ -92,7 +92,7 @@ The window has two pages. Click a task row to open its detail page; use the back
 - Three tabs across the top filter by status: To do / Doing / Done
 - The search button (magnifier icon) expands a live search field; click again to collapse and clear
 - Drag a task by its row to move it up or down; its subtasks travel with it and the new order reaches the whole team. A subtask moves among its siblings with the arrows on its row
-- To make a task a subtask of another, drag it and drop it on the highlighted » part at the right of that task's row; a line above the window says what the drop will do. A task that has subtasks of its own can't be nested this way, and a nested task loses its pin for every team member. Right-click a subtask and pick `Make a separate task` to move it back to the end of its tab
+- To make a task a subtask of another, drag it and drop it on the highlighted `Nest here` part at the right of that task's row; a line above the window says what the drop will do. A task that has subtasks of its own can't be nested this way, and a nested task loses its pin for every team member. Right-click a subtask and pick `Make a separate task` to move it back to the end of its tab
 - A task with subtasks gets an arrow button left of the star. A click cycles through all shown, done hidden and all hidden, skipping the middle step when it changes nothing; the tooltip names the current state and counts the done subtasks. Each task keeps its choice after a restart
 - `+ New Task` opens a short form with the icon, title and description. `Create Task` or Enter in the title creates the task and opens the full form; the button stays dimmed until the title has text
 - The buttons in the bottom-right open the HUD position settings and toggle the theme
