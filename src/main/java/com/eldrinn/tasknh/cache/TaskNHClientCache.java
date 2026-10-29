@@ -104,6 +104,11 @@ public class TaskNHClientCache {
         }
         // Remove stale pins in one batch — single save if anything changed
         pinConfig.removeStale(tasks.keySet());
+        // A teammate may have nested a task this player pinned, and subtasks can't be pinned. An orphan keeps its pin:
+        // the list shows it as a root.
+        for (Task t : tasks.values()) {
+            if (t.parentId != null && tasks.containsKey(t.parentId)) pinConfig.unpin(t.id);
+        }
         if (cpw.mods.fml.common.Loader.isModLoaded("navigator")) {
             com.eldrinn.tasknh.navigator.TaskLayerManager.INSTANCE.refreshFromCache(tasks.values());
         }

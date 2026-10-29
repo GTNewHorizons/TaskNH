@@ -27,6 +27,7 @@ import com.eldrinn.tasknh.gui.ColorUtils;
 import com.eldrinn.tasknh.gui.TaskNHGui;
 import com.eldrinn.tasknh.gui.TaskNHGuiData;
 import com.eldrinn.tasknh.network.TaskNHNetwork;
+import com.eldrinn.tasknh.network.UpdateTaskPacket;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -150,7 +151,7 @@ public class TaskListWidget extends Flow {
                 row.setEnabledIf(w -> matchesQuery(child, query(data)) && (!hidden || !query(data).isEmpty()));
                 block.child(row);
             }
-            TaskBlockItem item = new TaskBlockItem(task, () -> {
+            TaskBlockItem item = new TaskBlockItem(task, !children.isEmpty(), () -> {
                 List<Task> rows = new ArrayList<>();
                 if (matchesQuery(task, query(data)) || anyMatches(children, query(data))) rows.add(task);
                 for (Task child : children) {
@@ -161,7 +162,14 @@ public class TaskListWidget extends Flow {
             }, clicked -> {
                 data.selectTask(clicked.id);
                 TaskNHGui.open(data);
-            }, () -> TaskNHNetwork.sendReorderToServer(list.getValues()));
+            }, () -> TaskNHNetwork.sendReorderToServer(list.getValues()), parent -> {
+                task.parentId = parent.id;
+                TaskNHClientCache.moveToEnd(task);
+                // Subtasks can't be pinned. The sync unpins it too, this just keeps the HUD from showing it until then.
+                TaskNHClientCache.unpin(task.id);
+                TaskNHNetwork.sendEditToServer(task, new UpdateTaskPacket(task));
+                TaskNHGui.open(data);
+            });
             item.width(TaskRowWidget.ROW_WIDTH)
                 .coverChildrenHeight();
             // The item draws a button frame of its own, which would sit on top of the rows.
