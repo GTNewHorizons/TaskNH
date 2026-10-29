@@ -2,6 +2,8 @@ package com.eldrinn.tasknh.network;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.NetHandlerPlayServer;
@@ -53,7 +55,13 @@ public class UpdateTaskPacket implements IPacket {
             task.status = TaskStatus.DONE;
         }
 
-        if (oldTask.status != task.status) data.moveToEnd(team.getTeamId(), task);
+        boolean reparented = !Objects.equals(oldTask.parentId, task.parentId);
+        if (reparented && !canNest(data, team.getTeamId(), task)) {
+            task.parentId = oldTask.parentId;
+            reparented = false;
+        }
+
+        if (oldTask.status != task.status || reparented) data.moveToEnd(team.getTeamId(), task);
         data.updateTask(team.getTeamId(), task);
 
         // Notify players who are newly assigned to this task
@@ -77,5 +85,17 @@ public class UpdateTaskPacket implements IPacket {
 
         TaskNHNetwork.sendToTeamMembers(team.getMembers(), new SyncAllTasksPacket(data.getTeamTasks(team.getTeamId())));
         return null;
+    }
+
+    /** Whether the task may sit under its new parent. A task with no parent always may. */
+    private static boolean canNest(TaskNHWorldData data, UUID teamId, Task task) {
+        if (task.parentId == null) return true;
+        // Nesting is one level deep: the parent must be a root, and the task must not have subtasks of its own.
+        Task parent = data.getTask(teamId, task.parentId);
+        if (parent == null || parent.id.equals(task.id) || parent.parentId != null) return false;
+        for (Task other : data.getTeamTasks(teamId)) {
+            if (task.id.equals(other.parentId)) return false;
+        }
+        return true;
     }
 }

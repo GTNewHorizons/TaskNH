@@ -10,7 +10,7 @@ A task management mod for Minecraft 1.7.10 (GregTech: New Horizons). TaskNH lets
 
 - **Team-scoped tasks**: each GTNHLib team has its own isolated task list; all members stay in sync in real time
 - **Three-status workflow**: To do / Doing / Done, switchable from the task detail panel
-- **Subtasks**: attach child tasks to a task, one nesting level deep; a subtask is a full task with its own status, assignees and location. Fold the done subtasks or all of them under their parent
+- **Subtasks**: attach child tasks to a task, or drag an existing task onto another, one nesting level deep; a subtask is a full task with its own status, assignees and location. Fold the done subtasks or all of them under their parent
 - **Manual order**: drag a task to move it, with its subtasks; arrows reorder a subtask under its parent. The whole team sees the same order
 - **Checklist**: add checklist items to any task; check them off individually
 - **HUD**: pin up to 5 tasks to an on-screen HUD with their checklists and subtasks, with the tracked item's icon and how many you carry; position, scale and background are configurable
@@ -92,6 +92,7 @@ The window has two pages. Click a task row to open its detail page; use the back
 - Three tabs across the top filter by status: To do / Doing / Done
 - The search button (magnifier icon) expands a live search field; click again to collapse and clear
 - Drag a task by its row to move it up or down; its subtasks travel with it and the new order reaches the whole team. A subtask moves among its siblings with the arrows on its row
+- To make a task a subtask of another, drag it right and drop it onto that task; a line above the window says what the drop will do. A task that has subtasks of its own can't be nested this way, and a nested task loses its pin for every team member. Right-click a subtask and pick `Make a separate task` to move it back to the end of its tab
 - A task with subtasks gets an arrow button left of the star. A click cycles through all shown, done hidden and all hidden, skipping the middle step when it changes nothing; the tooltip names the current state and counts the done subtasks. Each task keeps its choice after a restart
 - `+ New Task` opens a short form with the icon, title and description. `Create Task` or Enter in the title creates the task and opens the full form; the button stays dimmed until the title has text
 - The buttons in the bottom-right open the HUD position settings and toggle the theme
