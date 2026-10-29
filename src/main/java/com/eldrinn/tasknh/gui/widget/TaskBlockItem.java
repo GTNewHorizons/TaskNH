@@ -14,7 +14,6 @@ import com.cleanroommc.modularui.api.layout.IViewportStack;
 import com.cleanroommc.modularui.drawable.GuiDraw;
 import com.cleanroommc.modularui.screen.viewport.LocatedWidget;
 import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
-import com.cleanroommc.modularui.theme.WidgetThemeEntry;
 import com.cleanroommc.modularui.utils.HoveredWidgetList;
 import com.cleanroommc.modularui.widget.sizer.Area;
 import com.cleanroommc.modularui.widgets.SortableListWidget;
@@ -46,11 +45,17 @@ public class TaskBlockItem extends SortableListWidget.Item<Task> {
     private final boolean hasSubtasks;
     /** How far the cursor may travel and still count as a click rather than a drag. */
     private static final int CLICK_SLOP = 2;
-    /** How far right of where the drag began the cursor must be for the drop to nest instead of reorder. */
-    private static final int NEST_SHIFT = 16;
-    /** The block the dragged one would nest under if dropped now. Static, since only one block is dragged at a time. */
+    // Only one block is dragged at a time, so the drag state below is static: the other blocks read it to draw their
+    // zones and frame.
+    /** The block being dragged, or null when none is. */
     @Nullable
-    private static TaskBlockItem nestTarget;
+    private static TaskBlockItem dragging;
+    /**
+     * The block whose nesting zone the cursor is over, whether or not the dragged block may nest there. Each block
+     * checks its own zone while drawing, see drawForeground, so the drag reads what the last frame found.
+     */
+    @Nullable
+    private static TaskBlockItem zoneBlock;
     private int dragStartX;
     private int dragStartY;
     /** Cursor offset inside the block when the drag began, so the floating copy keeps its grip point. */
@@ -86,7 +91,8 @@ public class TaskBlockItem extends SortableListWidget.Item<Task> {
         this.dragStartX = getContext().getAbsMouseX();
         this.dragStartY = getContext().getAbsMouseY();
         this.lastSwapY = this.dragStartY;
-        nestTarget = null;
+        dragging = this;
+        zoneBlock = null;
         Area moving = getMovingArea();
         if (moving != null) {
             this.relativeClickX = this.dragStartX - moving.x;
@@ -109,20 +115,8 @@ public class TaskBlockItem extends SortableListWidget.Item<Task> {
             moving.y = getContext().getAbsMouseY() - this.relativeClickY;
         }
         if (!(getParent() instanceof SortableListWidget<?>listWidget)) return;
-        nestTarget = null;
-        // While nesting the blocks stay put, or the one under the cursor would slide away before it is dropped on.
-        if (isNesting()) {
-            if (this.hasSubtasks) return;
-            for (LocatedWidget hovering : getPanel().getAllHoveringList(false)) {
-                // An orphan shows as a root but still has a parent id, so the server would refuse it.
-                if (hovering.getElement() instanceof TaskBlockItem other && other != this
-                    && other.getWidgetValue().parentId == null) {
-                    nestTarget = other;
-                    return;
-                }
-            }
-            return;
-        }
+        // Over a zone the blocks stay put, or the target would slide away before the drop.
+        if (zoneBlock != null) return;
         for (LocatedWidget hovering : getPanel().getAllHoveringList(false)) {
             if (!(hovering.getElement() instanceof TaskBlockItem other) || other == this) continue;
             int travelled = Math.abs(getContext().getAbsMouseY() - this.lastSwapY);
@@ -140,8 +134,9 @@ public class TaskBlockItem extends SortableListWidget.Item<Task> {
      */
     @Override
     public void onDragEnd(boolean successful) {
-        TaskBlockItem target = nestTarget;
-        nestTarget = null;
+        TaskBlockItem target = nestTarget();
+        dragging = null;
+        zoneBlock = null;
         if (target != null) {
             this.onNest.accept(target.getWidgetValue());
             return;
@@ -169,6 +164,7 @@ public class TaskBlockItem extends SortableListWidget.Item<Task> {
         super.drawMovingState(context, partialTicks);
         FontRenderer fr = Minecraft.getMinecraft().fontRenderer;
         int maxW = getPanel().getArea().width - 4;
+        TaskBlockItem nestTarget = nestTarget();
         String hint;
         int color;
         if (nestTarget != null) {
@@ -178,7 +174,7 @@ public class TaskBlockItem extends SortableListWidget.Item<Task> {
                 key,
                 fr.trimStringToWidth(nestTarget.getWidgetValue().title, Math.max(0, titleW)));
             color = ColorUtils.accentGold.getColor();
-        } else if (isNesting() && this.hasSubtasks) {
+        } else if (zoneBlock != null && this.hasSubtasks) {
             hint = StatCollector.translateToLocal("tasknh.gui.list.nest_blocked");
             color = ColorUtils.iconRemove.getColor();
         } else if (hasMoved()) {
@@ -198,22 +194,71 @@ public class TaskBlockItem extends SortableListWidget.Item<Task> {
         fr.drawStringWithShadow(hint, x + 2, y + 2, color);
     }
 
-    /** Frames the block the dragged one would nest under. */
+    /**
+     * While another block is dragged, marks the part of this task's row that nests it here, and frames the whole block
+     * once the cursor is over that part.
+     */
     @Override
-    public void drawOverlay(ModularGuiContext context, WidgetThemeEntry<?> widgetTheme) {
-        super.drawOverlay(context, widgetTheme);
-        if (nestTarget != this) return;
-        int color = 0xFF000000 | ColorUtils.accentGold.getColor();
+    public void drawForeground(ModularGuiContext context) {
+        super.drawForeground(context);
+        // The foreground, unlike the overlay, comes after the rows, which would otherwise paint over the zone. It is
+        // drawn in screen coordinates, so the block's origin is added by hand.
+        int x0 = context.transformX(0, 0);
+        int y0 = context.transformY(0, 0);
+        TaskBlockItem dragged = dragging;
+        boolean active = dragged != null && dragged != this
+            && dragged.hasMoved()
+            && takesSubtasks()
+            && canBeSeen(context);
+        boolean over = active && inZone(context.getAbsMouseX() - x0, context.getAbsMouseY() - y0);
+        if (over) {
+            zoneBlock = this;
+        } else if (zoneBlock == this) {
+            zoneBlock = null;
+        }
+        // A task with subtasks can't be nested, so its drag shows no zones; the line above the window says why.
+        if (!active || dragged.hasSubtasks) return;
+        int gold = ColorUtils.accentGold.getColor() & 0xFFFFFF;
         int w = getArea().width;
+        int zoneW = zoneWidth();
+        GuiDraw.drawRect(x0 + w - zoneW, y0, zoneW, TaskRowWidget.ROW_HEIGHT, (over ? 0x80000000 : 0x40000000) | gold);
+        FontRenderer fr = Minecraft.getMinecraft().fontRenderer;
+        String mark = "»";
+        fr.drawStringWithShadow(
+            mark,
+            x0 + w - zoneW + (zoneW - fr.getStringWidth(mark)) / 2,
+            y0 + (TaskRowWidget.ROW_HEIGHT - fr.FONT_HEIGHT) / 2 + 1,
+            0xFF000000 | gold);
+        if (!over) return;
+        int frame = 0xFF000000 | gold;
         int h = getArea().height;
-        GuiDraw.drawRect(0, 0, w, 1, color);
-        GuiDraw.drawRect(0, h - 1, w, 1, color);
-        GuiDraw.drawRect(0, 0, 1, h, color);
-        GuiDraw.drawRect(w - 1, 0, 1, h, color);
+        GuiDraw.drawRect(x0, y0, w, 1, frame);
+        GuiDraw.drawRect(x0, y0 + h - 1, w, 1, frame);
+        GuiDraw.drawRect(x0, y0, 1, h, frame);
+        GuiDraw.drawRect(x0 + w - 1, y0, 1, h, frame);
     }
 
-    private boolean isNesting() {
-        return getContext().getAbsMouseX() - this.dragStartX >= NEST_SHIFT;
+    /** The block the dragged one would nest under if dropped now, or null. */
+    @Nullable
+    private static TaskBlockItem nestTarget() {
+        return dragging == null || dragging.hasSubtasks ? null : zoneBlock;
+    }
+
+    /** Whether a task may be nested under this block's task: it has to be a root. */
+    private boolean takesSubtasks() {
+        // An orphan shows as a root but still has a parent id, so the server would refuse it.
+        return getWidgetValue().parentId == null;
+    }
+
+    /** Width of the nesting zone, the right part of the task's own row. */
+    private int zoneWidth() {
+        return getArea().width / 3;
+    }
+
+    /** Whether a point in this block's coordinates lies in its nesting zone. */
+    private boolean inZone(int x, int y) {
+        int w = getArea().width;
+        return y >= 0 && y < TaskRowWidget.ROW_HEIGHT && x >= w - zoneWidth() && x < w;
     }
 
     /** False for a plain click, which also starts a drag, so the hint doesn't flash on every click. */

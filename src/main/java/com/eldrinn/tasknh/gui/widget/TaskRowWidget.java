@@ -59,6 +59,7 @@ public class TaskRowWidget extends Flow {
     private static final int INDENT_W = 16;
     /** Space left and right of the text in the right-click menu. */
     private static final int MENU_PAD = 6;
+    private static final int MENU_ITEM_H = 14;
 
     public TaskRowWidget(Task task, TaskNHGuiData data, boolean isChild) {
         this(task, data, isChild, 0, 0, null, null);
@@ -113,11 +114,16 @@ public class TaskRowWidget extends Flow {
         selectBtn.child(buildRowContent(task, SELECT_BTN_W, CONTENT_W));
 
         if (isChild) {
-            // The anchor goes before the row, so the menu opens under the title and stays inside the window.
-            ContextMenuButton<?> menu = rowMenu(task, data);
+            // The anchor sits at the row's left edge, so a click position inside the row is the menu's offset too.
+            Menu<?> popup = new Menu<>();
+            ContextMenuButton<?> menu = rowMenu(task, data, popup);
             // Only the right button opens it, the left one is left to the drag and the click that selects the row.
             selectBtn.onMousePressed(btn -> {
                 if (btn != 1) return false;
+                var ctx = selectBtn.getContext();
+                popup.left(ctx.getAbsMouseX() - ctx.transformX(0, 0))
+                    .top(ctx.getAbsMouseY() - ctx.transformY(0, 0));
+                popup.scheduleResize();
                 menu.openMenu(false);
                 return true;
             });
@@ -326,39 +332,56 @@ public class TaskRowWidget extends Flow {
     }
 
     /**
-     * Builds the right-click menu of a subtask row: an anchor of zero width that the menu opens from, under the row.
+     * Builds the right-click menu of a subtask row into {@code popup}: an anchor of zero width that the menu is placed
+     * from. The caller moves the popup to the cursor before opening it.
      */
-    private static ContextMenuButton<?> rowMenu(Task task, TaskNHGuiData data) {
+    private static ContextMenuButton<?> rowMenu(Task task, TaskNHGuiData data, Menu<?> popup) {
         ContextMenuButton<?> anchor = new ContextMenuButton<>("tasknh_row_menu_" + task.id);
         String unnestKey = "tasknh.gui.row.menu.unnest";
         // As wide as the longest entry plus a margin on each side, so it reads as a popup rather than another row.
-        int width = Minecraft.getMinecraft().fontRenderer.getStringWidth(StatCollector.translateToLocal(unnestKey))
+        int itemW = Minecraft.getMinecraft().fontRenderer.getStringWidth(StatCollector.translateToLocal(unnestKey))
             + 2 * MENU_PAD;
-        ButtonWidget<?> unnest = new ButtonWidget<>();
-        unnest.height(14)
-            .widthRel(1f)
-            .overlay(IKey.lang(unnestKey))
-            .onMousePressed(btn -> {
-                if (btn != 0) return false;
-                anchor.closeMenu(false);
-                // The server checks the new parent the same way it checks nesting, and none is always allowed.
-                task.parentId = null;
-                TaskNHClientCache.moveToEnd(task);
-                TaskNHNetwork.sendEditToServer(task, new UpdateTaskPacket(task));
-                TaskNHGui.open(data);
-                return true;
-            });
+        ButtonWidget<?> unnest = menuItem(unnestKey, itemW);
+        unnest.onMousePressed(btn -> {
+            if (btn != 0) return false;
+            anchor.closeMenu(false);
+            // The server checks the new parent the same way it checks nesting, and none is always allowed.
+            task.parentId = null;
+            TaskNHClientCache.moveToEnd(task);
+            TaskNHNetwork.sendEditToServer(task, new UpdateTaskPacket(task));
+            TaskNHGui.open(data);
+            return true;
+        });
         // Opening is left to the row, so the anchor must not open on hover or on a press of its own.
         anchor.size(0, 20)
             .openOnHover(false)
             .openCustom()
             .menu(
-                new Menu<>().width(width)
+                popup.width(itemW + 2)
                     .coverChildrenHeight()
-                    .left(0)
-                    .top(20)
+                    // The frame color shows through the 1px padding around the items, which cover the rest.
+                    .disableThemeBackground(true)
+                    .background(new Rectangle().setColor(ColorUtils.backgroundRowSelected.getColor()))
+                    .padding(1)
                     .child(unnest));
         return anchor;
+    }
+
+    /** Builds one flat menu entry in the task list colors, highlighted under the cursor like a selected row. */
+    private static ButtonWidget<?> menuItem(String langKey, int width) {
+        var label = new TextWidget<>(IKey.lang(langKey));
+        label.size(width - MENU_PAD, MENU_ITEM_H)
+            .left(MENU_PAD)
+            .textAlign(Alignment.CenterLeft)
+            .color(ColorUtils.textWhite.getColor());
+        ButtonWidget<?> item = new ButtonWidget<>();
+        item.size(width, MENU_ITEM_H)
+            .disableThemeBackground(true)
+            .disableHoverThemeBackground(true)
+            .background(new Rectangle().setColor(ColorUtils.backgroundButton.getColor()))
+            .hoverBackground(new Rectangle().setColor(ColorUtils.backgroundRowSelected.getColor()))
+            .child(label);
+        return item;
     }
 
     private static int nameTextWidth(String name) {
