@@ -10,6 +10,8 @@ public class ColorUtils {
     // spotless:off
         textWhite               = color.rgb("textWhite",                "0xFFFFFF"),
         textGray                = color.rgb("textGray",                 "0xAAAAAA"),
+        textDanger              = color.rgb("textDanger",               "0xFF5555"),
+        textDangerConfirm       = color.rgb("textDangerConfirm",        "0xAA0000"),
 
         accentGold              = color.rgb("accentGold",               "0xF0C040"),
         accentGreen             = color.rgb("accentGreen",              "0x8BC34A"),

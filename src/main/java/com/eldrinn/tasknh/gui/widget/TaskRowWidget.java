@@ -1,6 +1,7 @@
 package com.eldrinn.tasknh.gui.widget;
 
 import java.util.UUID;
+import java.util.function.IntSupplier;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
@@ -35,6 +36,7 @@ import com.eldrinn.tasknh.data.Task;
 import com.eldrinn.tasknh.gui.ColorUtils;
 import com.eldrinn.tasknh.gui.TaskNHGui;
 import com.eldrinn.tasknh.gui.TaskNHGuiData;
+import com.eldrinn.tasknh.network.DeleteTaskPacket;
 import com.eldrinn.tasknh.network.TaskNHNetwork;
 import com.eldrinn.tasknh.network.UpdateTaskPacket;
 
@@ -113,22 +115,23 @@ public class TaskRowWidget extends Flow {
         final int CONTENT_W = SELECT_BTN_W - (childCount > 0 ? FOLD_BTN_W : 0);
         selectBtn.child(buildRowContent(task, SELECT_BTN_W, CONTENT_W));
 
-        if (isChild) {
-            // The anchor sits at the row's left edge, so a click position inside the row is the menu's offset too.
-            Menu<?> popup = new Menu<>();
-            ContextMenuButton<?> menu = rowMenu(task, data, popup);
-            // Only the right button opens it, the left one is left to the drag and the click that selects the row.
-            selectBtn.onMousePressed(btn -> {
-                if (btn != 1) return false;
-                var ctx = selectBtn.getContext();
-                popup.left(ctx.getAbsMouseX() - ctx.transformX(0, 0))
-                    .top(ctx.getAbsMouseY() - ctx.transformY(0, 0));
-                popup.scheduleResize();
-                menu.openMenu(false);
-                return true;
-            });
-            child(menu);
-        }
+        // The anchor sits at the row's left edge, so a click position inside the row is the menu's offset too.
+        Menu<?> popup = new Menu<>();
+        boolean[] deleteArmed = { false };
+        ContextMenuButton<?> menu = rowMenu(task, data, isChild, childCount > 0, popup, deleteArmed);
+        // Only the right button opens it, the left one is left to the drag and the click that selects the row.
+        selectBtn.onMousePressed(btn -> {
+            if (btn != 1) return false;
+            // A menu closed without confirming must ask again next time.
+            deleteArmed[0] = false;
+            var ctx = selectBtn.getContext();
+            popup.left(ctx.getAbsMouseX() - ctx.transformX(0, 0))
+                .top(ctx.getAbsMouseY() - ctx.transformY(0, 0));
+            popup.scheduleResize();
+            menu.openMenu(false);
+            return true;
+        });
+        child(menu);
         child(selectBtn);
         if (isChild) {
             child(
@@ -332,48 +335,88 @@ public class TaskRowWidget extends Flow {
     }
 
     /**
-     * Builds the right-click menu of a subtask row into {@code popup}: an anchor of zero width that the menu is placed
-     * from. The caller moves the popup to the cursor before opening it.
+     * Builds the right-click menu of a task row into {@code popup}: an anchor of zero width that the menu is placed
+     * from. The caller moves the popup to the cursor before opening it and resets {@code deleteArmed}.
      */
-    private static ContextMenuButton<?> rowMenu(Task task, TaskNHGuiData data, Menu<?> popup) {
+    private static ContextMenuButton<?> rowMenu(Task task, TaskNHGuiData data, boolean isChild, boolean hasChildren,
+        Menu<?> popup, boolean[] deleteArmed) {
         ContextMenuButton<?> anchor = new ContextMenuButton<>("tasknh_row_menu_" + task.id);
         String unnestKey = "tasknh.gui.row.menu.unnest";
+        String deleteKey = "tasknh.gui.row.menu.delete";
+        String confirmKey = hasChildren ? "tasknh.gui.row.menu.delete_confirm_all"
+            : "tasknh.gui.row.menu.delete_confirm";
         // As wide as the longest entry plus a margin on each side, so it reads as a popup rather than another row.
-        int itemW = Minecraft.getMinecraft().fontRenderer.getStringWidth(StatCollector.translateToLocal(unnestKey))
-            + 2 * MENU_PAD;
-        ButtonWidget<?> unnest = menuItem(unnestKey, itemW);
-        unnest.onMousePressed(btn -> {
+        FontRenderer fr = Minecraft.getMinecraft().fontRenderer;
+        int textW = Math.max(
+            fr.getStringWidth(StatCollector.translateToLocal(deleteKey)),
+            fr.getStringWidth(StatCollector.translateToLocal(confirmKey)));
+        if (isChild) textW = Math.max(textW, fr.getStringWidth(StatCollector.translateToLocal(unnestKey)));
+        int itemW = textW + 2 * MENU_PAD;
+        popup.width(itemW + 2)
+            .coverChildrenHeight()
+            // The frame color shows through the 1px padding around the items, which cover the rest.
+            .disableThemeBackground(true)
+            .background(new Rectangle().setColor(ColorUtils.backgroundRowSelected.getColor()))
+            .padding(1);
+        // The menu places every child at its own origin, so the entries need a column to stack them.
+        Flow items = Flow.column()
+            .width(itemW)
+            .coverChildrenHeight();
+        popup.child(items);
+
+        if (isChild) {
+            ButtonWidget<?> unnest = menuItem(IKey.lang(unnestKey), () -> ColorUtils.textWhite.getColor(), itemW);
+            unnest.onMousePressed(btn -> {
+                if (btn != 0) return false;
+                anchor.closeMenu(false);
+                // The server checks the new parent the same way it checks nesting, and none is always allowed.
+                task.parentId = null;
+                TaskNHClientCache.moveToEnd(task);
+                TaskNHNetwork.sendEditToServer(task, new UpdateTaskPacket(task));
+                TaskNHGui.open(data);
+                return true;
+            });
+            items.child(unnest);
+        }
+
+        // The first click only swaps the entry for the confirmation, the second one deletes.
+        ButtonWidget<?> delete = menuItem(
+            IKey.dynamic(() -> StatCollector.translateToLocal(deleteArmed[0] ? confirmKey : deleteKey)),
+            () -> (deleteArmed[0] ? ColorUtils.textDangerConfirm : ColorUtils.textDanger).getColor(),
+            itemW);
+        delete.onMousePressed(btn -> {
             if (btn != 0) return false;
+            if (!deleteArmed[0]) {
+                deleteArmed[0] = true;
+                return true;
+            }
             anchor.closeMenu(false);
-            // The server checks the new parent the same way it checks nesting, and none is always allowed.
-            task.parentId = null;
-            TaskNHClientCache.moveToEnd(task);
-            TaskNHNetwork.sendEditToServer(task, new UpdateTaskPacket(task));
+            // The server also deletes the subtasks of a root task, so an open subtask goes away with it.
+            Task selected = data.selectedTaskId == null ? null : TaskNHClientCache.get(data.selectedTaskId);
+            if (task.id.equals(data.selectedTaskId) || (selected != null && task.id.equals(selected.parentId))) {
+                data.clear();
+            }
+            TaskNHNetwork.sendDeleteToServer(task.id, new DeleteTaskPacket(task.id));
             TaskNHGui.open(data);
             return true;
         });
+        items.child(delete);
+
         // Opening is left to the row, so the anchor must not open on hover or on a press of its own.
         anchor.size(0, 20)
             .openOnHover(false)
             .openCustom()
-            .menu(
-                popup.width(itemW + 2)
-                    .coverChildrenHeight()
-                    // The frame color shows through the 1px padding around the items, which cover the rest.
-                    .disableThemeBackground(true)
-                    .background(new Rectangle().setColor(ColorUtils.backgroundRowSelected.getColor()))
-                    .padding(1)
-                    .child(unnest));
+            .menu(popup);
         return anchor;
     }
 
     /** Builds one flat menu entry in the task list colors, highlighted under the cursor like a selected row. */
-    private static ButtonWidget<?> menuItem(String langKey, int width) {
-        var label = new TextWidget<>(IKey.lang(langKey));
+    private static ButtonWidget<?> menuItem(IKey text, IntSupplier color, int width) {
+        var label = new TextWidget<>(text);
         label.size(width - MENU_PAD, MENU_ITEM_H)
             .left(MENU_PAD)
             .textAlign(Alignment.CenterLeft)
-            .color(ColorUtils.textWhite.getColor());
+            .color(color);
         ButtonWidget<?> item = new ButtonWidget<>();
         item.size(width, MENU_ITEM_H)
             .disableThemeBackground(true)
