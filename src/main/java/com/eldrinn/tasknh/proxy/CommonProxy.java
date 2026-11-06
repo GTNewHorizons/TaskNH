@@ -11,6 +11,7 @@ import com.eldrinn.tasknh.config.TaskNHConfig;
 import com.eldrinn.tasknh.event.ItemTrackHandler;
 import com.eldrinn.tasknh.event.PlayerLoginHandler;
 import com.eldrinn.tasknh.event.PlayerLogoutHandler;
+import com.eldrinn.tasknh.event.TeamMembersListener;
 import com.eldrinn.tasknh.event.TeamMergeListener;
 import com.eldrinn.tasknh.network.TaskNHNetwork;
 
@@ -44,6 +45,7 @@ public class CommonProxy {
             .register(itemTrackHandler);
         MinecraftForge.EVENT_BUS.register(itemTrackHandler);
         MinecraftForge.EVENT_BUS.register(new TeamMergeListener());
+        MinecraftForge.EVENT_BUS.register(new TeamMembersListener());
         TaskNHPermissions.registerNodes();
     }
 
