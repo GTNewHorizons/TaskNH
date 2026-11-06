@@ -46,6 +46,8 @@ public class TeamMembersListener {
         TaskNHNetwork.sendToTeamMembers(team.getMembers(), PlayerLoginHandler.buildTeamMembersPacket(team));
         TaskNHNetwork.sendToTeamMembers(
             team.getMembers(),
-            new SyncAllTasksPacket(TaskNHWorldData.get().getTeamTasks(team.getTeamId())));
+            new SyncAllTasksPacket(
+                TaskNHWorldData.get()
+                    .getTeamTasks(team.getTeamId())));
     }
 }
