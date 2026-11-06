@@ -15,7 +15,7 @@ A task management mod for Minecraft 1.7.10 (GregTech: New Horizons). TaskNH lets
 - **Checklist**: add checklist items to any task; check them off individually
 - **HUD**: pin up to 5 tasks to an on-screen HUD with their checklists and subtasks, with the tracked item's icon and how many you carry; position, scale and background are configurable
 - **Item tracking**: drag an item onto the task's tracking slot and the task closes itself once a team member carries it, in the amount the slot asks for
-- **Assignees**: assign any team member to a task from the GUI or via command, and nudge one of them with a reminder in chat. The GUI shows the section once your team has more than one member
+- **Assignees**: assign any team member to a task from the GUI, or any online player via command, and nudge one of them with a reminder in chat. The GUI shows the section once your team has more than one member
 - **Map markers**: pin a world coordinate to a task and display it on the map (requires Navigator)
 - **Task icon**: set any item as a task icon by dragging it from NEI onto the icon slot; right-click to clear, left-click to open its recipes
 - **Export / import**: dump a team's tasks to a JSON file and reload them on another world or share them
