@@ -325,24 +325,13 @@ public class TaskDetailWidget extends Flow {
                     () -> data.trackCountExpanded = false));
         }
 
-        // Assignees, hidden where nobody else can join: assigning and reminding would only ever point at you.
-        // A task that already has assignees, say from a session opened to LAN, keeps the section so they can
-        // be removed.
-        if (canHaveTeammates() || !task.assignees.isEmpty()) {
+        // Assignees, hidden while the team is only you: assigning and reminding would only ever point at you.
+        // A task that already has assignees keeps the section so they can still be seen.
+        if (hasTeammates() || !task.assignees.isEmpty()) {
             var assigneesLabel = new TextWidget<>(t("tasknh.gui.detail.assignees"));
             assigneesLabel.size(W, 14);
             formList.child(assigneesLabel);
             formList.child(new AssigneePickerWidget(task, data, W));
-            // GTNHLib gives every player a solo team, so a picker showing only you means nobody else joined it yet.
-            // An empty list, before the first sync, falls back to only you in the picker too.
-            if (TaskNHClientCache.getTeamMembers()
-                .size() <= 1 && canHaveTeammates()) {
-                var soloHint = new TextWidget<>(t("tasknh.gui.detail.assignees.solo_team"));
-                soloHint.size(W, 20);
-                soloHint.textAlign(Alignment.CenterLeft);
-                soloHint.color(ColorUtils.textGray.getColor());
-                formList.child(soloHint);
-            }
 
             // Remind buttons for each assigned player
             if (!task.assignees.isEmpty()) {
@@ -845,13 +834,12 @@ public class TaskDetailWidget extends Flow {
     }
 
     /**
-     * False in a singleplayer world nobody else can join, where there is no one to assign or invite. A world
-     * opened to LAN counts as shared.
+     * True once the team has someone besides you, offline members included. The list is empty until the first sync,
+     * which reads as nobody, so the section stays hidden instead of flashing in.
      */
-    private static boolean canHaveTeammates() {
-        Minecraft mc = Minecraft.getMinecraft();
-        return !mc.isSingleplayer() || mc.getIntegratedServer()
-            .getPublic();
+    private static boolean hasTeammates() {
+        return TaskNHClientCache.getTeamMembers()
+            .size() > 1;
     }
 
     private static String t(String key) {
