@@ -43,6 +43,7 @@ dependencies {
     compileOnly(rfg.deobf("com.github.GTNewHorizons:ServerUtilities:2.4.13:dev")) { transitive = false }
     compileOnly("com.github.GTNewHorizons:BlockRenderer6343:1.4.25:dev") { transitive = false }
     compileOnly("com.github.GTNewHorizons:StructureLib:1.4.45:dev") { transitive = false }
+    compileOnly("com.github.GTNewHorizons:Dashboard:1.0.20:api")
 
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:Angelica:2.2.21:dev") { transitive = false }
     // Other dependencies pull in an older NEI, which fails the version TaskNH asks for.
