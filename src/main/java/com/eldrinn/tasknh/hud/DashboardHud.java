@@ -51,6 +51,11 @@ public final class DashboardHud {
         HudRegistry.endRender();
     }
 
+    /** The list keeps drawing in Dashboard's editor, like the rest of the HUD. */
+    static boolean isEditorOpen() {
+        return HudRegistry.isLayoutScreenOpen();
+    }
+
     /** Where HudRenderer draws the list with its background, so the box grows and shrinks with the tasks. */
     private static HudBounds getBounds(int screenWidth, int screenHeight) {
         Minecraft mc = Minecraft.getMinecraft();
