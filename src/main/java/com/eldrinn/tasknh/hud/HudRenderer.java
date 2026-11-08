@@ -59,11 +59,20 @@ public class HudRenderer {
         PinnedTasksConfig cfg = TaskNHClientCache.getPinConfig();
         if (!cfg.isHudVisible()) return;
 
-        List<Task> all = TaskNHClientCache.getPinnedTasks();
-        if (all.isEmpty()) return;
-        int maxTasks = cfg.getMaxPinnedTasks();
-        List<Task> pinned = all.size() > maxTasks ? all.subList(0, maxTasks) : all;
+        List<Task> pinned = getShownTasks(cfg);
+        if (pinned.isEmpty()) return;
+        draw(pinned, cfg);
+    }
 
+    /** The pinned tasks, up to the number the HUD shows. */
+    static List<Task> getShownTasks(PinnedTasksConfig cfg) {
+        List<Task> all = TaskNHClientCache.getPinnedTasks();
+        int maxTasks = cfg.getMaxPinnedTasks();
+        return all.size() > maxTasks ? all.subList(0, maxTasks) : all;
+    }
+
+    void draw(List<Task> pinned, PinnedTasksConfig cfg) {
+        Minecraft mc = Minecraft.getMinecraft();
         ScaledResolution res = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
         int sw = res.getScaledWidth();
         int sh = res.getScaledHeight();
