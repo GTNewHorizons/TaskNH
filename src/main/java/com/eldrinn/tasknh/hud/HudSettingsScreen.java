@@ -46,24 +46,33 @@ public class HudSettingsScreen extends GuiScreen {
         int sw = res.getScaledWidth();
         int sh = res.getScaledHeight();
 
-        String hint = StatCollector.translateToLocal("tasknh.hud.settings.hint");
+        boolean movedInDashboard = isMovedInDashboard();
+        String hint = StatCollector
+            .translateToLocal(movedInDashboard ? "tasknh.hud.settings.hint_dashboard" : "tasknh.hud.settings.hint");
         fontRendererObj.drawStringWithShadow(
             hint,
             (sw - fontRendererObj.getStringWidth(hint)) / 2,
             6,
             ColorUtils.textGray.getColor());
 
-        int[] pos = hudPos(cfg, sw, sh);
-        int hx = pos[0];
-        int hy = pos[1];
-        drawRect(hx, hy, hx + HANDLE_SIZE, hy + HANDLE_SIZE, ColorUtils.backgroundHandle.getColor());
-        GL11.glColor4f(1f, 1f, 1f, 1f);
-        GuiTextures.ALL_DIRECTIONS.draw(hx, hy, HANDLE_SIZE, HANDLE_SIZE);
-        GL11.glColor4f(1f, 1f, 1f, 1f);
+        if (!movedInDashboard) {
+            int[] pos = hudPos(cfg, sw, sh);
+            int hx = pos[0];
+            int hy = pos[1];
+            drawRect(hx, hy, hx + HANDLE_SIZE, hy + HANDLE_SIZE, ColorUtils.backgroundHandle.getColor());
+            GL11.glColor4f(1f, 1f, 1f, 1f);
+            GuiTextures.ALL_DIRECTIONS.draw(hx, hy, HANDLE_SIZE, HANDLE_SIZE);
+            GL11.glColor4f(1f, 1f, 1f, 1f);
+        }
 
         drawControlPanel(cfg, sw, sh);
 
         super.drawScreen(mouseX, mouseY, partialTicks);
+    }
+
+    /** The handle would move a position the list no longer uses. */
+    private static boolean isMovedInDashboard() {
+        return HudRenderer.DASHBOARD && DashboardHud.isMoved();
     }
 
     private int[] hudPos(PinnedTasksConfig cfg, int sw, int sh) {
@@ -201,7 +210,10 @@ public class HudSettingsScreen extends GuiScreen {
         int hx = pos[0];
         int hy = pos[1];
 
-        if (mouseX >= hx && mouseX <= hx + HANDLE_SIZE && mouseY >= hy && mouseY <= hy + HANDLE_SIZE) {
+        if (!isMovedInDashboard() && mouseX >= hx
+            && mouseX <= hx + HANDLE_SIZE
+            && mouseY >= hy
+            && mouseY <= hy + HANDLE_SIZE) {
             dragging = true;
             dragOffsetX = mouseX - hx;
             dragOffsetY = mouseY - hy;

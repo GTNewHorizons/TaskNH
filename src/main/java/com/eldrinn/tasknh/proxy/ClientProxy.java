@@ -44,6 +44,9 @@ public class ClientProxy extends CommonProxy {
             .bus()
             .register(this);
         MinecraftForge.EVENT_BUS.register(new HudRenderer());
+        if (cpw.mods.fml.common.Loader.isModLoaded("dashboard")) {
+            com.eldrinn.tasknh.hud.DashboardHud.register();
+        }
         MinecraftForge.EVENT_BUS.register(this); // theme reloads are posted on the Forge bus
         TaskNHClientCache.loadConfig();
         if (cpw.mods.fml.common.Loader.isModLoaded("navigator")) {

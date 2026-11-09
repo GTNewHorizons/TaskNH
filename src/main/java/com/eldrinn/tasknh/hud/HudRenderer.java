@@ -34,6 +34,7 @@ import cpw.mods.fml.relauncher.SideOnly;
 public class HudRenderer {
 
     private static final RenderItem RENDER_ITEM = new RenderItem();
+    static final boolean DASHBOARD = cpw.mods.fml.common.Loader.isModLoaded("dashboard");
 
     /**
      * Carried counts by tracked stack, valid while the inventory matches the snapshot. Keyed by identity: a
@@ -54,16 +55,28 @@ public class HudRenderer {
     public void onRenderHud(RenderGameOverlayEvent.Post event) {
         if (event.type != RenderGameOverlayEvent.ElementType.TEXT) return;
         Minecraft mc = Minecraft.getMinecraft();
-        if (mc.currentScreen != null && !(mc.currentScreen instanceof HudSettingsScreen)) return;
+        if (mc.currentScreen != null && !(mc.currentScreen instanceof HudSettingsScreen)
+            && !(DASHBOARD && DashboardHud.isEditorOpen())) return;
 
         PinnedTasksConfig cfg = TaskNHClientCache.getPinConfig();
         if (!cfg.isHudVisible()) return;
 
-        List<Task> all = TaskNHClientCache.getPinnedTasks();
-        if (all.isEmpty()) return;
-        int maxTasks = cfg.getMaxPinnedTasks();
-        List<Task> pinned = all.size() > maxTasks ? all.subList(0, maxTasks) : all;
+        List<Task> pinned = getShownTasks(cfg);
+        if (pinned.isEmpty()) return;
+        if (DASHBOARD && !DashboardHud.beginPinnedTasks(event.resolution)) return;
+        draw(pinned, cfg);
+        if (DASHBOARD) DashboardHud.endRender();
+    }
 
+    /** The pinned tasks, up to the number the HUD shows. */
+    static List<Task> getShownTasks(PinnedTasksConfig cfg) {
+        List<Task> all = TaskNHClientCache.getPinnedTasks();
+        int maxTasks = cfg.getMaxPinnedTasks();
+        return all.size() > maxTasks ? all.subList(0, maxTasks) : all;
+    }
+
+    void draw(List<Task> pinned, PinnedTasksConfig cfg) {
+        Minecraft mc = Minecraft.getMinecraft();
         ScaledResolution res = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
         int sw = res.getScaledWidth();
         int sh = res.getScaledHeight();
