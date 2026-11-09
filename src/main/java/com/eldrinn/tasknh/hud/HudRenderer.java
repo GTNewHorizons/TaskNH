@@ -34,7 +34,7 @@ import cpw.mods.fml.relauncher.SideOnly;
 public class HudRenderer {
 
     private static final RenderItem RENDER_ITEM = new RenderItem();
-    private static final boolean DASHBOARD = cpw.mods.fml.common.Loader.isModLoaded("dashboard");
+    static final boolean DASHBOARD = cpw.mods.fml.common.Loader.isModLoaded("dashboard");
 
     /**
      * Carried counts by tracked stack, valid while the inventory matches the snapshot. Keyed by identity: a

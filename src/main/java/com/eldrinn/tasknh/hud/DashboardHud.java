@@ -56,6 +56,14 @@ public final class DashboardHud {
         return HudRegistry.isLayoutScreenOpen();
     }
 
+    /** True while the list sits somewhere else than TaskNH's own position, moved in Dashboard's editor. */
+    static boolean isMoved() {
+        ScaledResolution resolution = HudRegistry.getResolution();
+        HudBounds own = PINNED_TASKS.getDefaultBounds(resolution.getScaledWidth(), resolution.getScaledHeight());
+        HudBounds shown = HudRegistry.getBounds(PINNED_TASKS);
+        return shown.x != own.x || shown.y != own.y;
+    }
+
     /** Where HudRenderer draws the list with its background, so the box grows and shrinks with the tasks. */
     private static HudBounds getBounds(int screenWidth, int screenHeight) {
         Minecraft mc = Minecraft.getMinecraft();
