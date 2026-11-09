@@ -25,7 +25,7 @@ public class ClientProxy extends CommonProxy {
 
     public static final KeyBinding KEY_OPEN_GUI = new KeyBinding(
         "key.tasknh.open",
-        Keyboard.KEY_Y,
+        Keyboard.KEY_NONE,
         "key.categories.tasknh");
 
     /** Set on the network thread when the player leaves a server, handled on the next client tick. */
