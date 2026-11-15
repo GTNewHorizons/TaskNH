@@ -17,6 +17,7 @@ import net.minecraftforge.common.UsernameCache;
 import com.eldrinn.tasknh.cache.PlayerEntry;
 import com.eldrinn.tasknh.data.AssignedPlayer;
 import com.eldrinn.tasknh.data.Task;
+import com.eldrinn.tasknh.data.TaskStatus;
 import com.eldrinn.tasknh.network.SyncAllTasksPacket;
 import com.eldrinn.tasknh.network.SyncTeamMembersPacket;
 import com.eldrinn.tasknh.network.TaskNHNetwork;
@@ -76,6 +77,7 @@ public class PlayerLoginHandler {
 
         List<Task> newTasks = new ArrayList<>();
         for (Task task : data.getTeamTasks(team.getTeamId())) {
+            if (task.status == TaskStatus.DONE) continue;
             for (AssignedPlayer ap : task.assignees) {
                 if (ap.playerId()
                     .equals(playerId) && ap.assignedAt() > lastSeen) {
