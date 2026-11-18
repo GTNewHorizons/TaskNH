@@ -114,7 +114,20 @@ The search bar, the subtask and checklist add fields and the X/Y/Z fields hold u
 
 ## HUD
 
-Pinned tasks are drawn on screen with their checklists and subtasks. Checklist lines start with `-` and subtask lines with `>`, and a task with both gets a `Checklist X/Y` and a `Subtasks X/Y` header. An open subtask with a checklist shows its progress after the title. Checked items and done subtasks stay struck through at the end of their list. A task or checklist item with a tracked item shows its icon and how many of it you carry, like 5/10. The count covers only your own inventory, since the mod checks each member's inventory on its own. Tasks in progress come first, then open ones, each group in the order of the task list. A done task leaves the HUD and frees its slot but stays pinned, so it comes back if you reopen it. Open the HUD settings from the button in the bottom-right of the task list: drag the handle to reposition, with the list snapping to the screen edges and the center and a line showing where (hold Shift to stop snapping, or use the arrow keys to move it 1 px), adjust scale, background and how many tasks, checklist lines and subtask lines are shown, or turn the HUD off. The client keeps pins and subtask folds separately for each world and shares the HUD settings between them, all in the mod config folder.
+The HUD draws pinned tasks on screen with their checklists and subtasks.
+Checklist lines start with `-` and subtask lines with `>`, and a task with both gets a `Checklist X/Y` and a `Subtasks X/Y` header.
+An open subtask with a checklist shows its progress after the title.
+Checked items and done subtasks stay struck through at the end of their list.
+A task or checklist item with a tracked item shows its icon and how many of it you carry, like 5/10.
+The count covers only your own inventory, since the mod checks each member's inventory on its own.
+Tasks in progress come first, then open ones, each group in the order of the task list.
+A done task leaves the HUD and frees its slot but stays pinned, so it comes back if you reopen it.
+
+Open the HUD settings from the button in the bottom-right of the task list.
+Drag the handle to reposition the list: it stays on screen and snaps to the screen edges and the center, with a line marking the snap.
+Hold Shift to stop snapping, or press the arrow keys to move it 1 px.
+The settings also set the scale, the background and how many tasks, checklist lines and subtask lines show, and turn the HUD off.
+The client keeps pins and subtask folds separately for each world and shares the HUD settings between them, all in the mod config folder.
 
 ## Config
 

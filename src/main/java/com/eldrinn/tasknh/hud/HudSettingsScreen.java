@@ -373,7 +373,7 @@ public class HudSettingsScreen extends GuiScreen {
             } else if (screen - size - low < SNAP_DISTANCE) {
                 low = screen - size;
                 guide[0] = screen;
-            } else if (Math.abs(low + size / 2 - screen / 2.0) < SNAP_DISTANCE) {
+            } else if (Math.abs(low + (size - screen) / 2.0) < SNAP_DISTANCE) {
                 low = (screen - size) / 2;
                 guide[0] = screen / 2.0;
             }
