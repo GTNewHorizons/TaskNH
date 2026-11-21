@@ -25,12 +25,16 @@ public class HudSettingsScreen extends GuiScreen {
     private static final int HANDLE_SIZE = 10;
     private static final int PANEL_H = 24;
     private static final int PANEL_PADDING = 6;
+    private static final int SNAP_DISTANCE = 5;
 
     private boolean dragging = false;
-    private int dragOffsetX; // mouse offset within handle at drag start
+    private boolean headerBelow; // fixed for the length of a drag so the header does not jump
+    private int dragOffsetX; // mouse offset from the text start at drag start
     private int dragOffsetY;
     private int dragAnchorX; // anchorX at drag start (constant during drag)
     private int dragAnchorY;
+    private double guideX = Double.NaN; // screen x of the line the list snapped to, NaN when none
+    private double guideY = Double.NaN;
 
     @Override
     public boolean doesGuiPauseGame() {
@@ -54,12 +58,38 @@ public class HudSettingsScreen extends GuiScreen {
             ColorUtils.textGray.getColor());
 
         int[] pos = hudPos(cfg, sw, sh);
-        int hx = pos[0];
-        int hy = pos[1];
-        drawRect(hx, hy, hx + HANDLE_SIZE, hy + HANDLE_SIZE, ColorUtils.backgroundHandle.getColor());
+        if (HudRenderer.getShownTasks(cfg)
+            .isEmpty()) {
+            double[] box = visibleBox(cfg);
+            int left = pos[0] - (int) Math.round(box[0]);
+            int top = pos[1] - (int) Math.round(box[0]);
+            drawRect(
+                left,
+                top,
+                left + (int) Math.round(box[1]),
+                top + (int) Math.round(box[2]),
+                ColorUtils.backgroundHud.getColor());
+        }
+        if (!dragging) updateHeaderSide(cfg, pos);
+        int[] header = headerRect(cfg, pos);
+        drawRect(
+            header[0],
+            header[1],
+            header[0] + header[2],
+            header[1] + header[3],
+            ColorUtils.backgroundHandle.getColor());
         GL11.glColor4f(1f, 1f, 1f, 1f);
-        GuiTextures.ALL_DIRECTIONS.draw(hx, hy, HANDLE_SIZE, HANDLE_SIZE);
+        GuiTextures.ALL_DIRECTIONS.draw(header[0], header[1], HANDLE_SIZE, HANDLE_SIZE);
         GL11.glColor4f(1f, 1f, 1f, 1f);
+
+        if (!Double.isNaN(guideX)) {
+            int gx = Math.min((int) guideX, sw - 1);
+            drawRect(gx, 0, gx + 1, sh, ColorUtils.accentGreen.getColor());
+        }
+        if (!Double.isNaN(guideY)) {
+            int gy = Math.min((int) guideY, sh - 1);
+            drawRect(0, gy, sw, gy + 1, ColorUtils.accentGreen.getColor());
+        }
 
         drawControlPanel(cfg, sw, sh);
 
@@ -67,8 +97,22 @@ public class HudSettingsScreen extends GuiScreen {
     }
 
     private int[] hudPos(PinnedTasksConfig cfg, int sw, int sh) {
-        List<Task> pinned = TaskNHClientCache.getPinnedTasks();
+        List<Task> pinned = HudRenderer.getShownTasks(cfg);
         return HudRenderer.computeHudPosition(cfg, sw, sh, fontRendererObj, pinned);
+    }
+
+    /** The header goes above the list, or below it when the list sits too close to the top edge. */
+    private void updateHeaderSide(PinnedTasksConfig cfg, int[] pos) {
+        headerBelow = pos[1] - (int) Math.round(visibleBox(cfg)[0]) < HANDLE_SIZE;
+    }
+
+    /** Returns [x, y, width, height] of the drag header, as wide as the list. */
+    private int[] headerRect(PinnedTasksConfig cfg, int[] pos) {
+        double[] box = visibleBox(cfg);
+        int left = pos[0] - (int) Math.round(box[0]);
+        int top = pos[1] - (int) Math.round(box[0]);
+        int y = headerBelow ? top + (int) Math.round(box[2]) : top - HANDLE_SIZE;
+        return new int[] { left, y, (int) Math.round(box[1]), HANDLE_SIZE };
     }
 
     private void drawControlPanel(PinnedTasksConfig cfg, int sw, int sh) {
@@ -198,16 +242,18 @@ public class HudSettingsScreen extends GuiScreen {
         int sh = res.getScaledHeight();
 
         int[] pos = hudPos(cfg, sw, sh);
-        int hx = pos[0];
-        int hy = pos[1];
+        updateHeaderSide(cfg, pos);
+        int[] header = headerRect(cfg, pos);
 
-        if (mouseX >= hx && mouseX <= hx + HANDLE_SIZE && mouseY >= hy && mouseY <= hy + HANDLE_SIZE) {
+        if (mouseX >= header[0] && mouseX <= header[0] + header[2]
+            && mouseY >= header[1]
+            && mouseY <= header[1] + header[3]) {
             dragging = true;
-            dragOffsetX = mouseX - hx;
-            dragOffsetY = mouseY - hy;
-            // anchorX = hx - offsetX; store so drag updates offset correctly
-            dragAnchorX = hx - cfg.getOffsetX();
-            dragAnchorY = hy - cfg.getOffsetY();
+            dragOffsetX = mouseX - pos[0];
+            dragOffsetY = mouseY - pos[1];
+            // anchorX = text start - offsetX; store so drag updates offset correctly
+            dragAnchorX = pos[0] - cfg.getOffsetX();
+            dragAnchorY = pos[1] - cfg.getOffsetY();
             return;
         }
 
@@ -316,20 +362,76 @@ public class HudSettingsScreen extends GuiScreen {
     protected void mouseClickMove(int mouseX, int mouseY, int button, long timeSinceLastClick) {
         if (!dragging || button != 0) return;
         PinnedTasksConfig cfg = TaskNHClientCache.getPinConfig();
+        ScaledResolution res = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
+        double[] box = visibleBox(cfg);
+        boolean snap = !Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) && !Keyboard.isKeyDown(Keyboard.KEY_RSHIFT);
+        double[] guide = new double[1];
+        int x = fitAxis(mouseX - dragOffsetX, box[0], box[1], res.getScaledWidth(), snap, guide);
+        guideX = guide[0];
+        int y = fitAxis(mouseY - dragOffsetY, box[0], box[2], res.getScaledHeight(), snap, guide);
+        guideY = guide[0];
         // offset = absolute position - anchor (keeps offsetX/Y as delta from anchor)
-        cfg.setOffsetXRaw(mouseX - dragOffsetX - dragAnchorX);
-        cfg.setOffsetYRaw(mouseY - dragOffsetY - dragAnchorY);
+        cfg.setOffsetXRaw(x - dragAnchorX);
+        cfg.setOffsetYRaw(y - dragAnchorY);
+    }
+
+    /** Returns [padding, width, height] of the box the player sees, in screen pixels. */
+    private double[] visibleBox(PinnedTasksConfig cfg) {
+        List<Task> pinned = HudRenderer.getShownTasks(cfg);
+        double scale = cfg.getScale();
+        double w = (HudRenderer.maxBlockWidth(pinned, fontRendererObj, cfg) + HudRenderer.PADDING * 2) * scale;
+        double h = (HudRenderer.totalHeight(pinned, cfg, fontRendererObj) + HudRenderer.PADDING * 2) * scale;
+        return new double[] { HudRenderer.PADDING * scale, w, h };
+    }
+
+    /** Keeps the box on screen, snaps it if asked, returns the text start and sets guide[0] to the snap line or NaN. */
+    private static int fitAxis(int start, double padBefore, double size, int screen, boolean snap, double[] guide) {
+        double low = Math.max(0, Math.min(start - padBefore, screen - size));
+        guide[0] = Double.NaN;
+        if (snap) {
+            if (low < SNAP_DISTANCE) {
+                low = 0;
+                guide[0] = 0;
+            } else if (screen - size - low < SNAP_DISTANCE) {
+                low = screen - size;
+                guide[0] = screen;
+            } else if (Math.abs(low + (size - screen) / 2.0) < SNAP_DISTANCE) {
+                low = (screen - size) / 2;
+                guide[0] = screen / 2.0;
+            }
+        }
+        return (int) Math.round(low + padBefore);
+    }
+
+    /** Moves the list by whole pixels, kept on screen. */
+    private void nudge(int dx, int dy) {
+        PinnedTasksConfig cfg = TaskNHClientCache.getPinConfig();
+        ScaledResolution res = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
+        int[] pos = HudRenderer.computeHudPosition(
+            cfg,
+            res.getScaledWidth(),
+            res.getScaledHeight(),
+            fontRendererObj,
+            HudRenderer.getShownTasks(cfg));
+        double[] box = visibleBox(cfg);
+        double[] unused = new double[1];
+        int x = fitAxis(pos[0] + dx, box[0], box[1], res.getScaledWidth(), false, unused);
+        int y = fitAxis(pos[1] + dy, box[0], box[2], res.getScaledHeight(), false, unused);
+        cfg.setOffsetXRaw(x - (pos[0] - cfg.getOffsetX()));
+        cfg.setOffsetYRaw(y - (pos[1] - cfg.getOffsetY()));
     }
 
     @Override
     protected void mouseMovedOrUp(int mouseX, int mouseY, int button) {
         if (button == 0 && dragging) {
             dragging = false;
+            guideX = Double.NaN;
+            guideY = Double.NaN;
             PinnedTasksConfig cfg = TaskNHClientCache.getPinConfig();
             ScaledResolution res = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
             int sw = res.getScaledWidth();
             int sh = res.getScaledHeight();
-            List<Task> pinned = TaskNHClientCache.getPinnedTasks();
+            List<Task> pinned = HudRenderer.getShownTasks(cfg);
             PinnedTasksConfig cfg2 = TaskNHClientCache.getPinConfig();
             int blockW = HudRenderer.maxBlockWidth(pinned, fontRendererObj, cfg2);
             int totalH = HudRenderer.totalHeight(pinned, cfg2, fontRendererObj);
@@ -356,6 +458,20 @@ public class HudSettingsScreen extends GuiScreen {
         if (keyCode == Keyboard.KEY_ESCAPE) {
             Minecraft.getMinecraft()
                 .displayGuiScreen(null);
+            return;
         }
+        switch (keyCode) {
+            case Keyboard.KEY_LEFT -> nudge(-1, 0);
+            case Keyboard.KEY_RIGHT -> nudge(1, 0);
+            case Keyboard.KEY_UP -> nudge(0, -1);
+            case Keyboard.KEY_DOWN -> nudge(0, 1);
+            default -> {}
+        }
+    }
+
+    @Override
+    public void onGuiClosed() {
+        TaskNHClientCache.getPinConfig()
+            .save();
     }
 }
