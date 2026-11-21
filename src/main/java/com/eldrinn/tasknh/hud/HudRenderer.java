@@ -50,6 +50,7 @@ public class HudRenderer {
     private static final int ICON_GAP = 2;
     private static final int BLOCK_GAP = 4;
     static final int PADDING = 4;
+    private static final int EMPTY_HEIGHT = LINE_H * 2;
 
     @SubscribeEvent
     public void onRenderHud(RenderGameOverlayEvent.Post event) {
@@ -414,7 +415,8 @@ public class HudRenderer {
             if (subtasks.size() > shownSubtasks) h += LINE_H; // "+N more"
             h += BLOCK_GAP;
         }
-        return h;
+        // The settings screen still needs an area to place and snap when nothing is pinned.
+        return pinned.isEmpty() ? EMPTY_HEIGHT : h;
     }
 
     static int maxBlockWidth(List<Task> pinned, FontRenderer fr, PinnedTasksConfig cfg) {
