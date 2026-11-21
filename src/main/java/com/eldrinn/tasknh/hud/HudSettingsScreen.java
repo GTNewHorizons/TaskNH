@@ -245,8 +245,7 @@ public class HudSettingsScreen extends GuiScreen {
         updateHeaderSide(cfg, pos);
         int[] header = headerRect(cfg, pos);
 
-        if (mouseX >= header[0]
-            && mouseX <= header[0] + header[2]
+        if (mouseX >= header[0] && mouseX <= header[0] + header[2]
             && mouseY >= header[1]
             && mouseY <= header[1] + header[3]) {
             dragging = true;
