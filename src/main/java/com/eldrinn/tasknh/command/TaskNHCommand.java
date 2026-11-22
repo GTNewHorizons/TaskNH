@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
@@ -19,6 +20,8 @@ import javax.annotation.Nullable;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.event.ClickEvent;
+import net.minecraft.event.HoverEvent;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.JsonToNBT;
@@ -28,6 +31,8 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ChatComponentTranslation;
+import net.minecraft.util.ChatStyle;
+import net.minecraft.util.EnumChatFormatting;
 import net.minecraftforge.common.util.Constants;
 
 import com.eldrinn.tasknh.data.AssignedPlayer;
@@ -104,11 +109,29 @@ public class TaskNHCommand extends CommandBase {
                 if (tasks.isEmpty()) {
                     sender.addChatMessage(new ChatComponentTranslation("tasknh.cmd.no_tasks"));
                 } else {
+                    boolean canOpen = TaskNHPermissions.has(sender, TaskNHPermissions.OPEN);
                     for (Task t : tasks) {
                         String shortId = t.id.toString()
                             .substring(0, 8);
+                        ChatComponentText id = new ChatComponentText("[" + shortId + "]");
+                        if (canOpen) {
+                            id.setChatStyle(
+                                new ChatStyle().setUnderlined(true)
+                                    .setChatClickEvent(
+                                        new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/tasknh open " + t.id))
+                                    .setChatHoverEvent(
+                                        new HoverEvent(
+                                            HoverEvent.Action.SHOW_TEXT,
+                                            new ChatComponentTranslation("tasknh.cmd.list_open_tooltip"))));
+                        }
                         sender.addChatMessage(
-                            new ChatComponentText(String.format("[%s] %s (%s)", shortId, t.title, t.status.name())));
+                            new ChatComponentText("").appendSibling(id)
+                                .appendText(String.format(" %s (%s)", t.title, t.status.name())));
+                    }
+                    if (canOpen) {
+                        sender.addChatMessage(
+                            new ChatComponentTranslation("tasknh.cmd.list_open_hint")
+                                .setChatStyle(new ChatStyle().setColor(EnumChatFormatting.GOLD)));
                     }
                 }
                 break;
@@ -484,28 +507,48 @@ public class TaskNHCommand extends CommandBase {
                     sender.addChatMessage(new ChatComponentTranslation("tasknh.cmd.must_be_player"));
                     return;
                 }
-                UUID taskId;
-                try {
-                    taskId = UUID.fromString(args[1]);
-                } catch (IllegalArgumentException e) {
-                    sender.addChatMessage(new ChatComponentTranslation("tasknh.cmd.task_not_found", args[1]));
-                    return;
-                }
                 Team team = TeamManager.getTeamByPlayer(player.getUniqueID());
                 if (team == null) {
                     sender.addChatMessage(new ChatComponentTranslation("tasknh.cmd.not_in_team"));
                     return;
                 }
-                if (data.getTask(team.getTeamId(), taskId) == null) {
-                    sender.addChatMessage(new ChatComponentTranslation("tasknh.cmd.task_not_found", args[1]));
+                Task task = findTaskToOpen(data, sender, team.getTeamId(), args[1]);
+                if (task == null) {
                     return;
                 }
-                TaskNHNetwork.CHANNEL.sendTo(new OpenGuiPacket(taskId), player);
+                TaskNHNetwork.CHANNEL.sendTo(new OpenGuiPacket(task.id), player);
                 break;
             }
             default:
                 sender.addChatMessage(new ChatComponentText(getCommandUsage(sender)));
         }
+    }
+
+    private Task findTaskToOpen(TaskNHWorldData data, ICommandSender sender, UUID teamId, String id) {
+        Task match = null;
+        if (id.matches("[0-9a-fA-F]{8}")) {
+            String prefix = id.toLowerCase(Locale.ROOT);
+            for (Task task : data.getTeamTasks(teamId)) {
+                if (!task.id.toString()
+                    .startsWith(prefix)) continue;
+                if (match != null) {
+                    sender.addChatMessage(new ChatComponentTranslation("tasknh.cmd.ambiguous_task_id", id));
+                    return null;
+                }
+                match = task;
+            }
+        } else {
+            try {
+                match = data.getTask(teamId, UUID.fromString(id));
+            } catch (IllegalArgumentException e) {
+                sender.addChatMessage(new ChatComponentTranslation("tasknh.cmd.task_not_found", id));
+                return null;
+            }
+        }
+        if (match == null) {
+            sender.addChatMessage(new ChatComponentTranslation("tasknh.cmd.task_not_found", id));
+        }
+        return match;
     }
 
     /** Returns the sender's team tasks, or null if sender is not a player / has no team. */
