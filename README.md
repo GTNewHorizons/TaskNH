@@ -80,9 +80,10 @@ Access is controlled per subcommand by the `tasknh.<subcommand>` permission node
 | `import <name>`          | Import tasks from `<world>/tasknh/<name>.json`        |
 | `reload`                 | Re-sync tasks to all online players                    |
 | `gui`                    | Open the GUI (player only)                             |
-| `open <uuid>`            | Open the GUI on a specific task (player only)          |
+| `open <id or uuid>`      | Open the GUI on a specific task (player only)          |
 
 `<id>` is the first 8 characters of a task UUID, shown in `/tasknh list` and in the GUI.
+Click a task ID in `/tasknh list` to fill in the open command with the full UUID, then press Enter.
 
 ## GUI Overview
 
