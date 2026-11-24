@@ -10,7 +10,6 @@ import com.eldrinn.tasknh.command.TaskNHPermissions;
 import com.eldrinn.tasknh.config.TaskNHConfig;
 import com.eldrinn.tasknh.event.ItemTrackHandler;
 import com.eldrinn.tasknh.event.PlayerLoginHandler;
-import com.eldrinn.tasknh.event.PlayerLogoutHandler;
 import com.eldrinn.tasknh.event.TeamMembersListener;
 import com.eldrinn.tasknh.event.TeamMergeListener;
 import com.eldrinn.tasknh.network.TaskNHNetwork;
@@ -19,11 +18,13 @@ import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
+import cpw.mods.fml.common.event.FMLServerStoppedEvent;
 
 public class CommonProxy {
 
     /** In-memory cooldown map for remind actions. Key: "taskId:targetPlayerId". Resets on server restart. */
-    public static final Map<String, Long> remindCooldowns = new LinkedHashMap<>();
+    public final Map<String, Long> remindCooldowns = new LinkedHashMap<>();
+    private final ItemTrackHandler itemTrackHandler = new ItemTrackHandler();
 
     public void preInit(FMLPreInitializationEvent event) {
         TaskNHConfig.load(event);
@@ -35,11 +36,7 @@ public class CommonProxy {
         FMLCommonHandler.instance()
             .bus()
             .register(new PlayerLoginHandler());
-        FMLCommonHandler.instance()
-            .bus()
-            .register(new PlayerLogoutHandler());
         // ItemTrackHandler listens on both buses: EntityJoinWorldEvent (Forge) and ServerTickEvent (FML)
-        ItemTrackHandler itemTrackHandler = new ItemTrackHandler();
         FMLCommonHandler.instance()
             .bus()
             .register(itemTrackHandler);
@@ -51,5 +48,10 @@ public class CommonProxy {
 
     public void serverStarting(FMLServerStartingEvent event) {
         event.registerServerCommand(new TaskNHCommand());
+    }
+
+    public void serverStopped(FMLServerStoppedEvent event) {
+        itemTrackHandler.reset();
+        remindCooldowns.clear();
     }
 }

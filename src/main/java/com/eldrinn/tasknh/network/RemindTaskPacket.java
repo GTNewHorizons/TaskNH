@@ -8,10 +8,10 @@ import net.minecraft.network.PacketBuffer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ChatComponentTranslation;
 
+import com.eldrinn.tasknh.TaskNHMod;
 import com.eldrinn.tasknh.config.TaskNHConfig;
 import com.eldrinn.tasknh.data.Task;
 import com.eldrinn.tasknh.event.PlayerLoginHandler;
-import com.eldrinn.tasknh.proxy.CommonProxy;
 import com.eldrinn.tasknh.storage.TaskNHWorldData;
 import com.gtnewhorizon.gtnhlib.network.base.IPacket;
 import com.gtnewhorizon.gtnhlib.teams.Team;
@@ -55,7 +55,7 @@ public class RemindTaskPacket implements IPacket {
 
         String cooldownKey = taskId + ":" + targetPlayerId;
         long now = System.currentTimeMillis();
-        Long lastRemind = CommonProxy.remindCooldowns.get(cooldownKey);
+        Long lastRemind = TaskNHMod.proxy.remindCooldowns.get(cooldownKey);
         if (lastRemind != null && now - lastRemind < TaskNHConfig.remindCooldownSeconds * 1000L) {
             sender.addChatMessage(new ChatComponentTranslation("tasknh.chat.remind.cooldown"));
             return null;
@@ -74,7 +74,7 @@ public class RemindTaskPacket implements IPacket {
             return null;
         }
 
-        CommonProxy.remindCooldowns.put(cooldownKey, now);
+        TaskNHMod.proxy.remindCooldowns.put(cooldownKey, now);
         target.addChatMessage(new ChatComponentTranslation("tasknh.chat.remind.prefix", sender.getCommandSenderName()));
         target.addChatMessage(PlayerLoginHandler.buildTaskLink("tasknh.chat.remind.message", task.title, taskId));
         return null;
