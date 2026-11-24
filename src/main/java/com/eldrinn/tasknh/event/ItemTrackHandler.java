@@ -2,10 +2,9 @@ package com.eldrinn.tasknh.event;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -28,6 +27,7 @@ import com.gtnewhorizon.gtnhlib.teams.Team;
 import com.gtnewhorizon.gtnhlib.teams.TeamManager;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.PlayerEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 
 /**
@@ -38,53 +38,41 @@ import cpw.mods.fml.common.gameevent.TickEvent;
  */
 public class ItemTrackHandler {
 
-    private static final Map<UUID, InventoryListener> LISTENERS = new HashMap<>();
-    private static final Set<EntityPlayerMP> pending = new LinkedHashSet<>();
+    private final Map<UUID, Container> attached = new HashMap<>();
+    // Keyed by UUID: a respawned player keeps the dead entity's id and Entity.equals compares ids,
+    // so a set would keep the dead entity and drop the respawned one.
+    private final Map<UUID, EntityPlayerMP> pending = new LinkedHashMap<>();
 
     /** Attaches the inventory listener on login, respawn and dimension change. */
     @SubscribeEvent
     public void onEntityJoinWorld(EntityJoinWorldEvent event) {
         if (event.world.isRemote || !(event.entity instanceof EntityPlayerMP player)) return;
-        InventoryListener listener = LISTENERS.get(player.getUniqueID());
-        if (listener == null) {
-            listener = new InventoryListener(player);
-            LISTENERS.put(player.getUniqueID(), listener);
-        } else {
-            listener.player = player;
-        }
         // A dimension change reuses the same player and container, so the listener may already be attached.
         // Container.removeCraftingFromCrafters is client only, hence the container is remembered instead.
-        if (listener.attachedTo != player.inventoryContainer) {
-            player.inventoryContainer.addCraftingToCrafters(listener);
-            listener.attachedTo = player.inventoryContainer;
+        if (attached.put(player.getUniqueID(), player.inventoryContainer) != player.inventoryContainer) {
+            player.inventoryContainer.addCraftingToCrafters(new InventoryListener(player));
         }
         // Check once on join: the item may have been obtained while offline or in another dimension.
-        schedule(player);
+        pending.put(player.getUniqueID(), player);
     }
 
-    private static void schedule(EntityPlayerMP player) {
-        synchronized (pending) {
-            pending.add(player);
-        }
-    }
-
-    /** Drops the listener and any pending check for a player who left. */
-    public static void forget(EntityPlayerMP player) {
-        LISTENERS.remove(player.getUniqueID());
-        synchronized (pending) {
-            pending.remove(player);
+    @SubscribeEvent
+    public void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.player instanceof EntityPlayerMP player) {
+            TaskNHWorldData.get()
+                .setPlayerLastSeen(player.getUniqueID(), System.currentTimeMillis());
+            // A relogging player's old session can log out after the new one has joined.
+            attached.remove(player.getUniqueID(), player.inventoryContainer);
+            pending.remove(player.getUniqueID(), player);
         }
     }
 
     @SubscribeEvent
     public void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.START) return;
-        List<EntityPlayerMP> toCheck;
-        synchronized (pending) {
-            if (pending.isEmpty()) return;
-            toCheck = new ArrayList<>(pending);
-            pending.clear();
-        }
+        if (pending.isEmpty()) return;
+        final List<EntityPlayerMP> toCheck = new ArrayList<>(pending.values());
+        pending.clear();
         if (!TaskNHConfig.itemTrackingEnabled) return;
 
         TaskNHWorldData data = TaskNHWorldData.get();
@@ -93,7 +81,12 @@ public class ItemTrackHandler {
         }
     }
 
-    private static void checkPlayer(EntityPlayerMP player, TaskNHWorldData data) {
+    public void reset() {
+        attached.clear();
+        pending.clear();
+    }
+
+    private void checkPlayer(EntityPlayerMP player, TaskNHWorldData data) {
         Team team = TeamManager.getTeamByPlayer(player.getUniqueID());
         if (team == null) return;
 
@@ -189,10 +182,9 @@ public class ItemTrackHandler {
     }
 
     /** Marks a player for checking whenever their main inventory changes. */
-    private static class InventoryListener implements ICrafting {
+    private class InventoryListener implements ICrafting {
 
-        private EntityPlayerMP player;
-        private Container attachedTo;
+        private final EntityPlayerMP player;
 
         private InventoryListener(EntityPlayerMP player) {
             this.player = player;
@@ -200,13 +192,22 @@ public class ItemTrackHandler {
 
         @Override
         public void sendContainerAndContentsToPlayer(Container container, @SuppressWarnings("rawtypes") List contents) {
-            schedule(player);
+            schedule(container);
         }
 
         @Override
         public void sendSlotContents(Container container, int slot, ItemStack stack) {
             // Main inventory only — skip the crafting grid and armor slots.
-            if (slot >= 9 && slot <= 44) schedule(player);
+            if (slot >= 9 && slot <= 44) {
+                schedule(container);
+            }
+        }
+
+        // A dead player's container keeps its listener, so it must not overwrite the respawned entity.
+        private void schedule(Container container) {
+            if (attached.get(player.getUniqueID()) == container) {
+                pending.put(player.getUniqueID(), player);
+            }
         }
 
         @Override
